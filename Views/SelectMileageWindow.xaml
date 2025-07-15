@@ -1,0 +1,32 @@
+﻿<Window
+    x:Class="DamageMaker.Views.SelectMileageWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
+    xmlns:local="clr-namespace:DamageMaker.Views"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:md="clr-namespace:DamageMarker.Models"
+    xmlns:viewmodels="clr-namespace:DamageMarker.ViewModels"
+    xmlns:vm="clr-namespace:DamageMaker.ViewModels"
+    Title="SelectMileageWindow"
+    Width="350"
+    Height="500"
+    d:DataContext="{d:DesignInstance Type=viewmodels:MainWindowViewModel}"
+    mc:Ignorable="d">
+    <StackPanel>
+        <TextBlock Style="{StaticResource TextBlockLargeBold}" FontFamily="楷体" Margin="20" Foreground="{StaticResource PrimaryTextBrush}" >请选择图片</TextBlock>
+        <ListView x:Name="MyList" ItemsSource="{Binding LocationMileageImgs}" Height="400">
+            <i:Interaction.Triggers>
+                <i:EventTrigger EventName="SelectionChanged">
+                    <i:InvokeCommandAction Command="{Binding LocationImgCommand}" CommandParameter="{Binding Path=SelectedItem.ImgFullPath, ElementName=MyList}" />
+                </i:EventTrigger>
+            </i:Interaction.Triggers>
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn DisplayMemberBinding="{Binding ImgFullPath}" Header="文件名" />
+                </GridView>
+            </ListView.View>
+        </ListView>
+    </StackPanel>
+</Window>

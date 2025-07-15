@@ -1,0 +1,208 @@
+﻿<UserControl
+    x:Class="DamageMaker.Views.SetupContent"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:hc="https://handyorg.github.io/handycontrol"
+    xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
+    xmlns:local="clr-namespace:DamageMaker.Views"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:viewmodels="clr-namespace:DamageMaker.ViewModels"
+    xmlns:vm="clr-namespace:DamageMarker.ViewModels"
+    d:DataContext="{d:DesignInstance Type=viewmodels:SetupContentViewModel}"
+    mc:Ignorable="d">
+    <StackPanel>
+        <TabControl Width="300">
+            <FrameworkElement.Resources>
+                <ResourceDictionary>
+                    <Style x:Key="{x:Type StackPanel}" TargetType="{x:Type StackPanel}">
+                        <Setter Property="Margin" Value="0" />
+                        <Setter Property="Width" Value="280" />
+                        <Setter Property="StackPanel.Orientation" Value="Vertical" />
+                    </Style>
+                    <Style x:Key="{x:Type hc:UniformSpacingPanel}" TargetType="{x:Type hc:UniformSpacingPanel}">
+                        <Setter Property="hc:UniformSpacingPanel.ItemHorizontalAlignment" Value="Center" />
+                        <Setter Property="HorizontalAlignment" Value="Center" />
+                        <Setter Property="hc:UniformSpacingPanel.ChildWrapping" Value="Wrap" />
+                        <Setter Property="hc:UniformSpacingPanel.ItemHeight" Value="100" />
+                        <Setter Property="hc:UniformSpacingPanel.ItemWidth" Value="280" />
+                        <Setter Property="hc:UniformSpacingPanel.Spacing" Value="1" />
+                    </Style>
+                </ResourceDictionary>
+            </FrameworkElement.Resources>
+            <TabItem Header="路径设置">
+                <hc:UniformSpacingPanel>
+                    <StackPanel>
+                        <hc:Divider Content="捕获图片路径" />
+                        <WrapPanel HorizontalAlignment="Center">
+                            <hc:RunningBlock
+                                Width="200"
+                                Content="{Binding InPath}"
+                                Runaway="False"
+                                Speed="10"
+                                ToolTip="{Binding InPath}" />
+                            <Button
+                                Margin="5,0"
+                                Command="{Binding ChangeFilePathCommand}"
+                                CommandParameter="in路径">
+                                修改
+                            </Button>
+                        </WrapPanel>
+                    </StackPanel>
+                    <StackPanel>
+                        <hc:Divider Content="损伤图片路径" />
+                        <WrapPanel HorizontalAlignment="Center">
+                            <hc:RunningBlock
+                                Width="200"
+                                Content="{Binding OutPath}"
+                                Runaway="False"
+                                Speed="10"
+                                ToolTip="{Binding OutPath}" />
+                            <Button
+                                Margin="5,0"
+                                Command="{Binding ChangeFilePathCommand}"
+                                CommandParameter="out路径">
+                                修改
+                            </Button>
+                        </WrapPanel>
+                    </StackPanel>
+                    <StackPanel>
+                        <hc:Divider Content="Word报告路径" />
+                        <WrapPanel HorizontalAlignment="Center">
+                            <hc:RunningBlock
+                                x:Name="t1"
+                                Width="200"
+                                Content="{Binding DocxPath}"
+                                Runaway="False"
+                                Speed="10"
+                                ToolTip="{Binding DocxPath}" />
+                            <Button
+                                Margin="5,0"
+                                Command="{Binding ChangeFilePathCommand}"
+                                CommandParameter="word路径">
+                                修改
+                            </Button>
+                        </WrapPanel>
+                    </StackPanel>
+
+                    <StackPanel>
+                        <hc:Divider Content="Excel报告路径" />
+                        <WrapPanel HorizontalAlignment="Center">
+                            <hc:RunningBlock
+                                Width="200"
+                                Content="{Binding ExcelsPath}"
+                                Runaway="False"
+                                Speed="10"
+                                ToolTip="{Binding ExcelsPath}" />
+                            <Button
+                                Margin="5,0"
+                                Command="{Binding ChangeFilePathCommand}"
+                                CommandParameter="Excel路径">
+                                修改
+                            </Button>
+                        </WrapPanel>
+                    </StackPanel>
+
+                </hc:UniformSpacingPanel>
+            </TabItem>
+            <TabItem Header="截图设置">
+                <hc:UniformSpacingPanel>
+                    <StackPanel>
+                        <hc:Divider Content="截图偏移量" ToolTip="截图偏移量越大,截图速度越快" />
+                        <hc:PreviewSlider
+                            Width="170"
+                            HorizontalAlignment="Center"
+                            Maximum="45"
+                            Value="{Binding ScreenshotOffset}">
+                            <hc:PreviewSlider.PreviewContent>
+                                <Label
+                                    Content="{Binding Path=(hc:PreviewSlider.PreviewPosition), RelativeSource={RelativeSource Self}}"
+                                    ContentStringFormat="#0"
+                                    Style="{StaticResource LabelPrimary}" />
+                            </hc:PreviewSlider.PreviewContent>
+                        </hc:PreviewSlider>
+                    </StackPanel>
+                    <StackPanel>
+                        <hc:Divider Content="截图移动像素(px/ms)" ToolTip="数值越大,截图速度越快" />
+                        <hc:PreviewSlider
+                            Width="170"
+                            HorizontalAlignment="Center"
+                            Maximum="130"
+                            Minimum="25"
+                            Value="{Binding MouseMovePixel}">
+                            <hc:PreviewSlider.PreviewContent>
+                                <Label
+                                    Content="{Binding Path=(hc:PreviewSlider.PreviewPosition), RelativeSource={RelativeSource Self}}"
+                                    ContentStringFormat="#0"
+                                    Style="{StaticResource LabelPrimary}" />
+                            </hc:PreviewSlider.PreviewContent>
+                        </hc:PreviewSlider>
+                    </StackPanel>
+                    <StackPanel>
+                        <hc:Divider Content="截图时延迟(ms)" ToolTip="每次截图时,中间延迟时间" />
+                        <hc:PreviewSlider
+                            Width="170"
+                            HorizontalAlignment="Center"
+                            Maximum="20"
+                            Minimum="1"
+                            Value="{Binding ScreenshotInterval}">
+                            <hc:PreviewSlider.PreviewContent>
+                                <Label
+                                    Content="{Binding Path=(hc:PreviewSlider.PreviewPosition), RelativeSource={RelativeSource Self}}"
+                                    ContentStringFormat="#0"
+                                    Style="{StaticResource LabelPrimary}" />
+                            </hc:PreviewSlider.PreviewContent>
+                        </hc:PreviewSlider>
+                    </StackPanel>
+
+
+                </hc:UniformSpacingPanel>
+            </TabItem>
+            <!--<TabItem Header="获取数据设置">
+                <hc:UniformSpacingPanel>
+                    <StackPanel>
+                        <hc:Divider Content="发送地址" />
+                        <TextBox Width="150" Text="{Binding Url}"/>
+                    </StackPanel>
+                    <StackPanel>
+                        <hc:Divider Content="发送参数" />
+                        <TextBox Width="150" Text="{Binding Parameter}"/>
+                    </StackPanel>
+                </hc:UniformSpacingPanel>
+            </TabItem>-->
+            <TabItem Header="分析设置">
+                <hc:UniformSpacingPanel>
+                    <StackPanel>
+                        <hc:Divider Content="过滤重复数据" />
+                        <CheckBox Width="18" IsChecked="{Binding IsDistinctDamage}" />
+                    </StackPanel>
+                    <StackPanel>
+                        <hc:Divider Content="隐藏鱼鳞伤(更改选项后重新打开文件夹生效)" />
+                        <CheckBox Width="18" IsChecked="{Binding IsConcealFishScale}">
+                            <i:Interaction.Triggers>
+                                <i:EventTrigger EventName="Click"> 
+                                    <i:InvokeCommandAction Command="{Binding ConcealFishScaleChangedCommand}" />
+                                </i:EventTrigger>
+                            </i:Interaction.Triggers>
+                        </CheckBox>
+                    </StackPanel>
+
+                    <StackPanel>
+                        <hc:Divider Content="规则标记展示数量" />
+                        <TextBox
+                            Width="32"
+                            Height="5"
+                            Text="{Binding DisplayedRulesCount}"
+                            TextChanged="TextBox_TextChanged_1">
+                            <i:Interaction.Triggers>
+                                <i:EventTrigger EventName="LostFocus">
+                                    <i:InvokeCommandAction Command="{Binding DisplayedRulesCountChangedCommand}" />
+                                </i:EventTrigger>
+                            </i:Interaction.Triggers>
+                        </TextBox>
+                    </StackPanel>
+                </hc:UniformSpacingPanel>
+            </TabItem>
+        </TabControl>
+    </StackPanel>
+</UserControl>

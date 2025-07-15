@@ -1,0 +1,700 @@
+﻿<hc:Window
+    x:Class="DamageMarker.Views.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:cvs="clr-namespace:DamageMaker.Converters"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:hc="https://handyorg.github.io/handycontrol"
+    xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
+    xmlns:local="clr-namespace:DamageMarker.Views"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:md="clr-namespace:DamageMaker.Models"
+    xmlns:system="clr-namespace:System;assembly=netstandard"
+    xmlns:vm="clr-namespace:DamageMarker.ViewModels"
+    Title="探伤分析系统"
+    Width="1920"
+    Height="1000"
+    d:DataContext="{d:DesignInstance vm:MainWindowViewModel,
+                                     IsDesignTimeCreatable=True}"
+    Icon="../Resources/Logo.png"
+    SnapsToDevicePixels="True"
+    UseLayoutRounding="True"
+    WindowStartupLocation="CenterScreen"
+    WindowState="Maximized"
+    mc:Ignorable="d">
+    <Window.Resources>
+        <cvs:AddOneConverter x:Key="AddOneConverter" />
+    </Window.Resources>
+    <Window.InputBindings>
+        <KeyBinding Key="Z" Command="{Binding ModifyImgCommand}" />
+        <KeyBinding Key="O" Command="{Binding NoDamageCheckCommand}" />
+        <KeyBinding Key="P" Command="{Binding DamageCheckCommand}" />
+        <KeyBinding
+            Key="S"
+            Command="{Binding ShowAllBoxSelectedCommand}"
+            CommandParameter="键盘触发" />
+    </Window.InputBindings>
+    <i:Interaction.Triggers>
+        <i:EventTrigger EventName="Closing">
+            <i:InvokeCommandAction Command="{Binding WinClosingCommand}" />
+        </i:EventTrigger>
+    </i:Interaction.Triggers>
+    <Border>
+        <Grid Background="{DynamicResource RegionBrush}">
+            <Grid.LayoutTransform>
+                <ScaleTransform x:Name="Scal" />
+            </Grid.LayoutTransform>
+            <Grid.Resources>
+                <Style BasedOn="{StaticResource ButtonPrimary}" TargetType="Button">
+                    <Setter Property="Effect" Value="{StaticResource EffectShadow4}" />
+                    <Setter Property="Width" Value="130" />
+                    <Setter Property="Height" Value="40" />
+                    <Setter Property="FontSize" Value="14" />
+                </Style>
+                <Style BasedOn="{StaticResource TextBlockDefaultPrimary}" TargetType="TextBlock" />
+                <Style BasedOn="{StaticResource ToggleButtonPrimary}" TargetType="ToggleButton">
+                    <Setter Property="Effect" Value="{StaticResource EffectShadow4}" />
+                    <Setter Property="Width" Value="130" />
+                    <Setter Property="Height" Value="40" />
+                    <Setter Property="FontSize" Value="14" />
+                </Style>
+            </Grid.Resources>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="11*" />
+                <ColumnDefinition Width="53*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="2*" />
+                <RowDefinition Height="2*" />
+                <RowDefinition Height="0.5*" />
+                <RowDefinition Height="3.5*" />
+                <RowDefinition Height="9*" />
+                <RowDefinition Height="12*" />
+                <RowDefinition Height="2*" />
+            </Grid.RowDefinitions>
+
+            <StackPanel Grid.Row="0" Grid.RowSpan="3">
+                <Image Height="80" Source="../Resources/Logo.png" />
+                <TextBlock
+                    Margin="5"
+                    FontFamily="楷体"
+                    FontSize="18"
+                    FontWeight="Bold">
+                    合肥平行线机器人
+                </TextBlock>
+            </StackPanel>
+            <StackPanel
+                Grid.Row="0"
+                Grid.RowSpan="2"
+                Grid.Column="1"
+                Width="900"
+                Height="68"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Orientation="Horizontal">
+                <TextBlock
+                    FontFamily="楷体"
+                    FontSize="60"
+                    FontWeight="Bold"
+                    Text="{Binding AppTitle}" />
+            </StackPanel>
+            <StackPanel
+                Grid.Row="1"
+                Grid.Column="1"
+                Width="390"
+                Height="60"
+                Margin="1212,0,0,0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                Effect="{StaticResource EffectShadow4}">
+                <StackPanel Orientation="Horizontal">
+                    <CheckBox
+                        FontSize="12"
+                        IsChecked="{Binding IsDetectionAsynChecked}"
+                        IsEnabled="{Binding IsDetectionAsynEnable}">
+                        探伤软件同步搜索
+                    </CheckBox>
+                    <TextBlock Margin="30,0" Text="6M">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Is6MRunning}" Value="True">
+                                        <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Is6MRunning}" Value="False">
+                                        <Setter Property="Foreground" Value="{StaticResource ThirdlyTextBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <TextBlock Text="8C">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Is8CRunning}" Value="True">
+                                        <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Is8CRunning}" Value="False">
+                                        <Setter Property="Foreground" Value="{StaticResource ThirdlyTextBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </StackPanel>
+                <hc:SearchBar
+                    Width="350"
+                    Height="45"
+                    Margin="20,0"
+                    hc:InfoElement.Placeholder="格式为:300km200(中间以km或KM为分割)"
+                    hc:InfoElement.Title="里程定位"
+                    hc:InfoElement.TitlePlacement="Left"
+                    hc:InfoElement.TitleWidth="80"
+                    Command="{Binding SearchMileageCommand}"
+                    CommandParameter="{Binding Text, RelativeSource={RelativeSource Self}}"
+                    Style="{StaticResource SearchBarPlus}"
+                    Text="{Binding SearchMileageText}"
+                    TextChanged="SearchBar_TextChanged" />
+            </StackPanel>
+            <hc:Drawer
+                Name="DrawerLeft"
+                Content="{Binding Setup}"
+                Dock="Left"
+                Effect="{StaticResource EffectShadow4}"
+                ShowMode="Push" />
+            <StackPanel />
+            <StackPanel
+                Grid.Row="0"
+                Width="0"
+                HorizontalAlignment="Center" />
+            <StackPanel
+                Grid.Row="2"
+                Grid.Column="1"
+                Width="450"
+                Height="16"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Orientation="Horizontal">
+
+                <TextBlock
+                    Width="450"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    FontSize="{StaticResource SubHeadFontSize}"
+                    FontStyle="Italic"
+                    Text="{Binding ImgFolderName}" />
+            </StackPanel>
+            <StackPanel
+                Grid.Row="1"
+                Grid.Column="1"
+                Width="0"
+                HorizontalAlignment="Center"
+                Orientation="Horizontal"
+                Visibility="Visible" />
+            <UniformGrid
+                Grid.Row="1"
+                Grid.Column="1"
+                Columns="3"
+                Rows="0">
+                <StackPanel HorizontalAlignment="Center" Orientation="Horizontal" />
+            </UniformGrid>
+            <GroupBox
+                Grid.Row="3"
+                Grid.RowSpan="1"
+                Grid.Column="1"
+                Margin="10,0,10,32"
+                hc:TitleElement.TitlePlacement="Top"
+                Effect="{StaticResource EffectShadow4}"
+                Header="图片展示区"
+                Style="{StaticResource InputElementBaseStyle}">
+                <hc:ScrollViewer hc:ScrollViewerAttach.Orientation="Horizontal">
+                    <ListBox
+                        x:Name="ThumbnailList"
+                        ItemsSource="{Binding ThumbnailImgInfos}"
+                        ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                        SelectedIndex="{Binding SelectedIndex}"
+                        SelectedItem="{Binding SelectedThumbnailImg}"
+                        SelectionChanged="ThumbnailList_SelectionChanged"
+                        Style="{x:Null}"
+                        VirtualizingStackPanel.IsVirtualizing="True"
+                        VirtualizingStackPanel.VirtualizationMode="Recycling">
+                        <ListBox.Resources>
+                            <system:Double x:Key="{x:Static SystemParameters.HorizontalScrollBarButtonWidthKey}">80</system:Double>
+                        </ListBox.Resources>
+                        <ListBox.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <VirtualizingStackPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ListBox.ItemsPanel>
+                        <i:Interaction.Triggers>
+                            <i:EventTrigger EventName="SelectionChanged">
+                                <i:InvokeCommandAction Command="{Binding ImgSelectionChangedCommand}" />
+                            </i:EventTrigger>
+                        </i:Interaction.Triggers>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <TextBlock
+                                        Width="200"
+                                        Margin="10"
+                                        Text="{Binding Name}" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </hc:ScrollViewer>
+            </GroupBox>
+            <TabControl
+                Grid.Row="2"
+                Grid.RowSpan="4"
+                Margin="8,8,8,8"
+                Background="Transparent">
+                <TabControl.Resources>
+                    <Style BasedOn="{StaticResource TabControlCapsuleSolid}" TargetType="TabControl">
+                        <Setter Property="Background" Value="Transparent" />
+                        <Setter Property="BorderBrush" Value="Transparent" />
+                        <Setter Property="BorderThickness" Value="3" />
+                        <Setter Property="Effect" Value="{StaticResource EffectShadow4}" />
+                    </Style>
+                </TabControl.Resources>
+                <TabItem>
+                    <TabItem.Header>
+                        <TextBlock
+                            FontSize="{StaticResource SubHeadFontSize}"
+                            Foreground="{StaticResource DarkInfoBrush}"
+                            Text="功能区" />
+                    </TabItem.Header>
+                    <StackPanel>
+                        <GroupBox
+                            Height="300"
+                            Margin="20"
+                            Effect="{StaticResource EffectShadow4}"
+                            Header="分析功能"
+                            Style="{StaticResource GroupBoxTab.Small}">
+                            <UniformGrid Columns="0" Rows="3">
+                                <Menu
+                                    Width="130"
+                                    Height="40"
+                                    BorderThickness="2"
+                                    Effect="{StaticResource EffectShadow4}"
+                                    Style="{StaticResource InputElementBaseStyle}">
+                                    <MenuItem ItemsSource="{Binding MenuItems}">
+                                        <MenuItem.Header>
+                                            <StackPanel
+                                                Width="120"
+                                                Height="38"
+                                                HorizontalAlignment="Center"
+                                                Orientation="Horizontal">
+                                                <TextBlock
+                                                    Width="120"
+                                                    Height="38"
+                                                    HorizontalAlignment="Center"
+                                                    VerticalAlignment="Center"
+                                                    FontSize="16"
+                                                    Foreground="{DynamicResource PrimaryTextBrush}">
+                                                    选择软件
+                                                </TextBlock>
+                                            </StackPanel>
+                                        </MenuItem.Header>
+                                        <MenuItem.ItemTemplate>
+                                            <DataTemplate>
+                                                <MenuItem
+                                                    Background="{StaticResource PrimaryBrush}"
+                                                    Command="{Binding Command}"
+                                                    CommandParameter="{Binding CommandParameter}"
+                                                    FontSize="16"
+                                                    Foreground="White"
+                                                    Header="{Binding Header}" />
+                                            </DataTemplate>
+                                        </MenuItem.ItemTemplate>
+                                    </MenuItem>
+                                </Menu>
+                                <Button hc:IconElement.Geometry="{StaticResource FullScreenReturnGeometry}" Command="{Binding ScreenShotFuncCommand}">
+                                    数据捕获
+                                </Button>
+                                <Button
+                                    HorizontalAlignment="Center"
+                                    hc:IconElement.Geometry="{StaticResource AlignBottomGeometry}"
+                                    Command="{Binding GetJsonResultCommand}"
+                                    ToolTip="手动获取探伤数据">
+                                    开始分析
+                                </Button>
+                            </UniformGrid>
+                        </GroupBox>
+                        <GroupBox
+                            Grid.Row="4"
+                            Height="350"
+                            Margin="20"
+                            Effect="{StaticResource EffectShadow4}"
+                            Header="系统功能"
+                            Style="{StaticResource GroupBoxTab.Small}">
+                            <UniformGrid Rows="4">
+                                <ToggleButton
+                                    Width="130"
+                                    Height="40"
+                                    Margin="10"
+                                    hc:IconElement.Geometry="{StaticResource WindowsGeometry}"
+                                    Effect="{StaticResource EffectShadow4}"
+                                    FontSize="14"
+                                    IsChecked="{Binding IsOpen, ElementName=DrawerLeft}">
+                                    系统设置
+                                </ToggleButton>
+                                <Button
+                                    hc:IconElement.Geometry="{StaticResource ClockGeometry}"
+                                    Command="{Binding SelectedPathCommand}"
+                                    ToolTip="打开以前的判伤集">
+                                    历史回放
+                                </Button>
+                                <ToggleButton
+                                    Width="130"
+                                    Height="40"
+                                    Margin="4"
+                                    hc:IconSwitchElement.Geometry="{StaticResource EyeOpenGeometry}"
+                                    Click="bthClick"
+                                    Command="{Binding FilterImgCommand}"
+                                    Effect="{StaticResource EffectShadow4}"
+                                    FontSize="14"
+                                    IsChecked="{Binding IsFilterThumbnail}"
+                                    IsEnabled="{Binding IsEnableThumbnail}"
+                                    Style="{StaticResource ToggleButtonPrimary}"
+                                    ToolTip="隐藏没有探伤数据的图片">
+                                    数据筛选
+                                </ToggleButton>
+                                <ToggleButton
+                                    Width="130"
+                                    Height="40"
+                                    Margin="4"
+                                    Command="{Binding ExportReportCommand}"
+                                    IsChecked="{Binding IsImporting}"
+                                    Style="{StaticResource ToggleButtonLoadingPrimary}">
+                                    导出报告
+                                </ToggleButton>
+                            </UniformGrid>
+                        </GroupBox>
+                    </StackPanel>
+                </TabItem>
+                <TabItem Height="30">
+                    <TabItem.Header>
+                        <TextBlock
+                            FontSize="{StaticResource SubHeadFontSize}"
+                            Foreground="{StaticResource DarkInfoBrush}"
+                            Text="项目总览" />
+                    </TabItem.Header>
+                    <TreeView
+                        Name="TV"
+                        Margin="5,5,-11,5"
+                        Effect="{StaticResource EffectShadow4}"
+                        ItemsSource="{Binding DamageTree}"
+                        Style="{StaticResource TreeView.Small}">
+                        <i:Interaction.Triggers>
+                            <i:EventTrigger EventName="GotKeyboardFocus">
+                                <i:InvokeCommandAction Command="{Binding LocationImgCommand}" CommandParameter="{Binding SelectedItem.FileName, RelativeSource={RelativeSource AncestorType={x:Type TreeView}}}" />
+                            </i:EventTrigger>
+                        </i:Interaction.Triggers>
+
+
+                        <!--<TreeView.InputBindings>
+                            <KeyBinding
+                                Key="Right"
+                                Command="{Binding LocationImgCommand}"
+                                CommandParameter="{Binding SelectedItem.FileName, RelativeSource={RelativeSource AncestorType={x:Type TreeView}}}" />
+                        </TreeView.InputBindings>-->
+                        <TreeView.ItemContainerStyle>
+                            <Style BasedOn="{StaticResource TreeViewItemBaseStyle}" TargetType="TreeViewItem">
+                                <Style.Triggers>
+                                    <Trigger Property="IsSelected" Value="True">
+                                        <Setter Property="Foreground" Value="Gray" />
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TreeView.ItemContainerStyle>
+                        <TreeView.Resources>
+                            <HierarchicalDataTemplate DataType="{x:Type md:DamageCategorySummaryTree}" ItemsSource="{Binding Children}">
+                                <TextBlock FontSize="17" Text="{Binding Name}" />
+                            </HierarchicalDataTemplate>
+                            <HierarchicalDataTemplate
+                                AlternationCount="1000"
+                                DataType="{x:Type md:DamageCategoryTree}"
+                                ItemsSource="{Binding Children}">
+                                <Border>
+                                    <Border.Style>
+                                        <Style BasedOn="{StaticResource BorderTipDanger}" TargetType="Border">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding ColorBrush}" Value="{x:Static Brushes.Green}">
+                                                    <Setter Property="Background" Value="{StaticResource LightSuccessBrush}" />
+                                                    <Setter Property="BorderBrush" Value="{StaticResource SuccessBrush}" />
+                                                </DataTrigger>
+                                                <!--<DataTrigger Binding="{Binding ColorBrush}" Value="Condition2">
+                                                    <Setter Property="Style" Value="{StaticResource BorderTipWarning}" />
+                                                </DataTrigger>-->
+                                                <DataTrigger Binding="{Binding ColorBrush}" Value="{x:Static Brushes.YellowGreen}">
+                                                    <Setter Property="Background" Value="{StaticResource LightWarningBrush}" />
+                                                    <Setter Property="BorderBrush" Value="{StaticResource WarningBrush}" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <StackPanel Width="210" Orientation="Horizontal">
+                                        <TextBlock
+                                            FontSize="{StaticResource SubHeadFontSize}"
+                                            MouseDown="TextBlock_MouseDown"
+                                            Text="{Binding Name}" />
+                                        <TextBlock FontSize="16" Text="{Binding Count, StringFormat='  次数:{0}'}" />
+                                    </StackPanel>
+                                </Border>
+
+                            </HierarchicalDataTemplate>
+                            <DataTemplate DataType="{x:Type md:Details}">
+                                <Border
+                                    Margin="5"
+                                    BorderThickness="2"
+                                    CornerRadius="5"
+                                    Effect="{StaticResource EffectShadow4}"
+                                    MouseDown="Border_MouseDown"
+                                    Style="{StaticResource BorderTipPrimary}">
+
+
+                                    <!--<i:Interaction.Triggers>
+                                        <i:EventTrigger EventName="MouseDown">
+                                            <i:InvokeCommandAction Command="{Binding DataContext.LocationImgCommand, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" CommandParameter="{Binding FileName}" />
+                                        </i:EventTrigger>
+                                    </i:Interaction.Triggers>-->
+
+                                    <WrapPanel Width="200" Orientation="Horizontal">
+                                        <Label HorizontalAlignment="Right" Content="{Binding (ItemsControl.AlternationIndex), RelativeSource={RelativeSource AncestorType=TreeViewItem}, StringFormat='{}{0}', Converter={StaticResource AddOneConverter}}" />
+                                        <TextBlock
+                                            x:Name="summaryFileName"
+                                            Width="120"
+                                            Margin="5,0"
+                                            Foreground="Black"
+                                            Text="{Binding FileName, StringFormat='里程号:{0}'}"
+                                            ToolTip="{Binding FileName}" />
+                                        <hc:ElementGroup>
+                                            <TextBlock
+                                                Margin="10,0"
+                                                Foreground="Black"
+                                                Text="{Binding Count, StringFormat='次数:{0}'}" />
+                                            <TextBlock
+                                                Margin="10,0"
+                                                Foreground="Black"
+                                                Text="{Binding weight, StringFormat='权重:{0}'}"
+                                                Visibility="{Binding weight, Converter={StaticResource Object2VisibilityConverter}}" />
+                                        </hc:ElementGroup>
+
+                                    </WrapPanel>
+                                </Border>
+                            </DataTemplate>
+                        </TreeView.Resources>
+                    </TreeView>
+
+                </TabItem>
+                <TabItem Height="30" ScrollViewer.VerticalScrollBarVisibility="Visible">
+                    <TabItem.Header>
+                        <TextBlock
+                            FontSize="{StaticResource SubHeadFontSize}"
+                            Foreground="{StaticResource DarkInfoBrush}"
+                            Text="单个总览" />
+                    </TabItem.Header>
+                    <StackPanel>
+                        <ToggleButton
+                            Width="100"
+                            Margin="5"
+                            Content="隐藏正常标记"
+                            Effect="{StaticResource EffectShadow4}"
+                            IsChecked="{Binding IsHideNormalMarker}"
+                            Style="{StaticResource ToggleButtonSwitch}">
+                            <i:Interaction.Triggers>
+                                <i:EventTrigger EventName="Click">
+                                    <i:InvokeCommandAction Command="{Binding HideNormalMarkerCommand}" />
+                                </i:EventTrigger>
+                            </i:Interaction.Triggers>
+                        </ToggleButton>
+                        <DataGrid
+                            Height="690"
+                            Margin="3"
+                            AutoGenerateColumns="False"
+                            Effect="{StaticResource EffectShadow4}"
+                            ItemsSource="{Binding DetailsList}">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Binding="{Binding Id}" Header="编号" />
+                                <DataGridTemplateColumn>
+                                    <DataGridTemplateColumn.Header>伤损分类</DataGridTemplateColumn.Header>
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Foreground="{Binding MarkerColor}" Text="{Binding DamageCategory}" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <!--<DataGridTextColumn Binding="{Binding DamageCategory}"  Header="伤损类别" />-->
+                                <DataGridTextColumn Binding="{Binding Similarity}" Header="相似度" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </StackPanel>
+                </TabItem>
+            </TabControl>
+            <Border
+                Grid.Row="6"
+                Grid.Column="0"
+                Grid.ColumnSpan="2"
+                Padding="0"
+                BorderBrush="{StaticResource InfoBrush}"
+                BorderThickness="2"
+                CornerRadius="8"
+                Style="{StaticResource BorderTipPrimary}">
+                <UniformGrid
+                    Margin="0,10"
+                    Columns="4"
+                    FirstColumn="0">
+                    <StackPanel Margin="10,0" Orientation="Horizontal">
+                        <Label Background="{Binding PortStatusColor}" />
+                        <TextBlock Text="{Binding PortStatusText}" />
+                        <hc:ProgressButton
+                            Width="60"
+                            Height="25"
+                            Margin="5"
+                            Checked="ProgressButton_Checked"
+                            Command="{Binding StartPythonScriptCommand}"
+                            FontSize="10"
+                            IsChecked="{Binding IsStartPython}"
+                            Style="{StaticResource ToggleButtonLoadingPrimary}"
+                            Visibility="{Binding StartPythonVisible}">
+                            启动
+                        </hc:ProgressButton>
+                        <Button
+                            Width="60"
+                            Height="25"
+                            Margin="5"
+                            Command="{Binding StopPythonScriptCommand}"
+                            FontSize="10"
+                            Style="{StaticResource ButtonWarning}"
+                            Visibility="{Binding StopPythonVisible}">
+                            停止
+                        </Button>
+                    </StackPanel>
+                    <StackPanel
+                        Grid.ColumnSpan="2"
+                        Orientation="Horizontal"
+                        Visibility="{Binding ProgressVisibility}">
+                        <TextBlock VerticalAlignment="Center">判伤进度:</TextBlock>
+                        <ProgressBar
+                            Width="240"
+                            HorizontalAlignment="center"
+                            Maximum="{Binding TotalProgress}"
+                            Style="{StaticResource ProgressBarSuccess}"
+                            Value="{Binding CurrentProgress}" />
+                        <Button
+                            Margin="10,0,0,0"
+                            Command="{Binding StopProgressCommand}"
+                            Content="停止"
+                            Style="{StaticResource ButtonWarning}" />
+                    </StackPanel>
+                    <TextBlock FontSize="{StaticResource DefaultControlHeight}" ToolTip="当前图片数/标记图片数">
+                        <TextBlock.Text>
+                            <MultiBinding StringFormat="{}{0}/{1}">
+                                <Binding Path="AllImgCount" />
+                                <Binding Path="SingleImgCount" />
+                            </MultiBinding>
+                        </TextBlock.Text>
+                    </TextBlock>
+                    <TextBlock Text="{Binding Version}" />
+                </UniformGrid>
+            </Border>
+            <StackPanel
+                Grid.Row="3"
+                Grid.RowSpan="3"
+                Grid.Column="1"
+                Width="1622"
+                Height="684"
+                Margin="0,79,0,0"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Top"
+                Effect="{StaticResource EffectShadow4}">
+                <Border BorderBrush="{Binding ImgBorderBrush}" BorderThickness="7">
+                    <Viewbox Width="1720" Height="610">
+                        <hc:ImageViewer
+                            Name="img"
+                            Width="1920"
+                            Height="800"
+                            Margin="0"
+                            Padding="0"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Top"
+                            Effect="{StaticResource EffectShadow4}"
+                            ImageSource="{Binding ImgSource}"
+                            IsFullScreen="False"
+                            RenderTransformOrigin="0.773,7.543"
+                            ShowImgMap="True">
+                            <hc:AdornerElement.Instance>
+                                <hc:Magnifier
+                                    HorizontalOffset="-16"
+                                    Scale="2"
+                                    VerticalOffset="-16" />
+                            </hc:AdornerElement.Instance>
+                        </hc:ImageViewer>
+                    </Viewbox>
+
+                </Border>
+                <StackPanel
+                    Width="1400"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Orientation="Horizontal">
+                    <TextBlock
+                        Name="RuleInfo"
+                        Width="400"
+                        HorizontalAlignment="Left" />
+                    <StackPanel
+                        Width="1000"
+                        HorizontalAlignment="Right"
+                        Orientation="Horizontal">
+                        <Button
+                            Margin="10,3"
+                            HorizontalAlignment="Center"
+                            Command="{Binding ModifyImgCommand}">
+                            修改当前标记[Z]
+                        </Button>
+                        <ToggleButton
+                            Width="130"
+                            Height="40"
+                            Margin="10,10"
+                            Checked="ToggleButton_Checked"
+                            Command="{Binding ShowAllBoxSelectedCommand}"
+                            IsChecked="{Binding IsShowAllBoxSelected}">
+                            显示标记[S]
+                        </ToggleButton>
+                        <Button Margin="10,10" Command="{Binding StartSnipasteCommand}">探头颜色展示</Button>
+
+                        <ToggleButton
+                            Margin="10"
+                            Command="{Binding NoDamageCheckCommand}"
+                            CommandParameter="鼠标点击"
+                            IsChecked="{Binding HasNoDamageImg}"
+                            Style="{StaticResource ToggleButtonSuccess}">
+                            无伤[O]
+                        </ToggleButton>
+                        <ToggleButton
+                            Margin="10"
+                            Command="{Binding DamageCheckCommand}"
+                            CommandParameter="鼠标点击"
+                            IsChecked="{Binding HasDamageImg}"
+                            Style="{StaticResource ToggleButtonDanger}">
+                            疑似[P]
+                        </ToggleButton>
+                        <TextBlock
+                            Margin="14,0,0,0"
+                            FontWeight="DemiBold"
+                            Text="备注:" />
+                        <TextBox
+                            Width="300"
+                            Margin="3"
+                            IsReadOnly="{Binding IsReadRemarkOnly}"
+                            Text="{Binding DamageRemark}"
+                            TextWrapping="WrapWithOverflow" />
+                    </StackPanel>
+
+                </StackPanel>
+            </StackPanel>
+        </Grid>
+    </Border>
+</hc:Window>

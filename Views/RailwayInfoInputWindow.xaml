@@ -1,0 +1,165 @@
+﻿<hc:Window
+    x:Class="DamageMaker.Views.RailwayInfoInputWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:cvs="clr-namespace:DamageMaker.Converters"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:hc="https://handyorg.github.io/handycontrol"
+    xmlns:sys="clr-namespace:System;assembly=mscorlib"
+    xmlns:viewmodels="clr-namespace:DamageMaker.ViewModels"
+    Width="400"
+    Height="820"
+    Background="{DynamicResource RegionBrush}"
+    Closed="Window_Closed"
+    ResizeMode="NoResize"
+    WindowStartupLocation="CenterScreen"
+    WindowStyle="SingleBorderWindow">
+
+    <hc:Window.Resources>
+        <cvs:WorkDateToStringConverter x:Key="WorkDateToStringConverter" />
+        <!--  其他资源  -->
+        <Style x:Key="InputCard" TargetType="hc:Card">
+            <Setter Property="Margin" Value="10,8" />
+            <Setter Property="Padding" Value="15" />
+            <Setter Property="Background" Value="{DynamicResource PrimaryBackgroundBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+        <Style BasedOn="{StaticResource TextBoxExtend}" TargetType="hc:TextBox">
+            <Setter Property="Margin" Value="0,5" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="hc:TitleElement.Foreground" Value="#444" />
+        </Style>
+        <Style BasedOn="{StaticResource DatePickerExtend}" TargetType="DatePicker">
+            <Setter Property="Margin" Value="0,5" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+    </hc:Window.Resources>
+
+    <Grid Margin="15">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!--  Header  -->
+        <Border
+            Grid.Row="0"
+            Margin="0,0,0,15"
+            Background=" #5586de "
+            CornerRadius="4">
+            <TextBlock
+                Margin="90,10"
+                FontSize="23"
+                FontWeight="SemiBold"
+                Foreground="White"
+                Text="铁轨回放信息录入" />
+        </Border>
+
+        <!--  Content  -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <!--  仪器信息  -->
+                <hc:Card Style="{StaticResource InputCard}">
+                    <StackPanel>
+                        <hc:ComboBox
+                            hc:TitleElement.Title="仪器类型："
+                            FontSize="{StaticResource SubHeadFontSize}"
+                            IsEditable="True"
+                            Text="{Binding Instruments}">
+                            <ComboBoxItem Content="8C" />
+                            <ComboBoxItem Content="6M" />
+                            <ComboBoxItem Content="8D" />
+                            <ComboBoxItem Content="19型" />
+                            <ComboBoxItem Content="gt-20" />
+                            <ComboBoxItem Content="双轨501" />
+                            <ComboBoxItem Content="双轨502" />
+                        </hc:ComboBox>
+                        <!--  串号需要在历史记录显现  -->
+                        <hc:TextBox
+                            hc:InfoElement.Necessary="True"
+                            hc:InfoElement.Placeholder="必填"
+                            hc:InfoElement.Title="仪器串号："
+                            FontSize="{StaticResource SubHeadFontSize}"
+                            Text="{Binding SerialNumber}" />
+                    </StackPanel>
+                </hc:Card>
+
+                <!--  作业信息  -->
+                <hc:Card Style="{StaticResource InputCard}">
+                    <!--  作业日期需要在历史记录显现  -->
+                    <StackPanel>
+                        <DatePicker
+                            hc:InfoElement.Necessary="True"
+                            hc:InfoElement.Placeholder="必填:例2025/3/31"
+                            hc:TitleElement.Title="作业日期："
+                            FontSize="{StaticResource SubHeadFontSize}"
+                            SelectedDate="{Binding WorkDate, Converter={StaticResource WorkDateToStringConverter}}" />
+
+                        <!--  作业区间需要在历史记录显现  -->
+                        <hc:TextBox
+                            hc:InfoElement.Necessary="True"
+                            hc:InfoElement.Placeholder="必填"
+                            hc:InfoElement.Title="作业区间："
+                            FontSize="{StaticResource SubHeadFontSize}"
+                            Text="{Binding WorkSection}" />
+
+                        <hc:TextBox
+                            hc:TitleElement.Title="作业长度："
+                            FontSize="{StaticResource SubHeadFontSize}"
+                            Text="{Binding WorkLength}" />
+                    </StackPanel>
+                </hc:Card>
+
+                <!--  线路信息  -->
+                <hc:Card Style="{StaticResource InputCard}">
+                    <StackPanel>
+                        <hc:ComboBox
+                            hc:TitleElement.Title="正线/站线"
+                            FontSize="{StaticResource SubHeadFontSize}"
+                            SelectedValue="{Binding SelectedLineType}"
+                            SelectedValuePath="Content"
+                            Style="{StaticResource ComboBoxExtend}">
+                            <ComboBoxItem Content="正线" IsSelected="True" />
+                            <ComboBoxItem Content="站线" />
+                        </hc:ComboBox>
+
+                        <hc:TextBox
+                            hc:TitleElement.Title="工区班组："
+                            FontSize="{StaticResource SubHeadFontSize}"
+                            Text="{Binding WorkGroup}" />
+                    </StackPanel>
+                </hc:Card>
+
+                <!--  回放信息  -->
+                <hc:Card Style="{StaticResource InputCard}">
+                    <StackPanel>
+                        <hc:TextBox
+                            hc:TitleElement.Title="回放人员："
+                            FontSize="{StaticResource SubHeadFontSize}"
+                            Text="{Binding OperatorName}" />
+                    </StackPanel>
+                </hc:Card>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!--  Footer  -->
+        <Border
+            Grid.Row="2"
+            Padding="0,1"
+            Background="{DynamicResource RegionBrush}">
+            <Button
+                Width="102"
+                Height="30"
+                Background=" #5586de "
+                Command="{Binding SaveRailWayInfoCommand}"
+                CommandParameter="{Binding RelativeSource={RelativeSource AncestorType={x:Type hc:Window}}}"
+                Content="保存信息"
+                FontSize="13"
+                Style="{StaticResource ButtonPrimary}" />
+        </Border>
+    </Grid>
+</hc:Window>

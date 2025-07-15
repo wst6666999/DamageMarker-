@@ -1,0 +1,62 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="DamageMaker.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="ScreenshotOffset" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">30</Value>
+    </Setting>
+    <Setting Name="ScreenshotInterval" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">30</Value>
+    </Setting>
+    <Setting Name="LastSelectedFolder" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="AppLocation" Type="System.Collections.Specialized.StringCollection" Scope="Application">
+      <Value Profile="(Default)">&lt;?xml version="1.0" encoding="utf-16"?&gt;
+&lt;ArrayOfString xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"&gt;
+  &lt;string&gt;D:\work\E\铁路超声波探伤判伤\探伤\回放软件\JGT-6M免安装版\软件\JGT-6M回放软件免安装版\JGT-6M信息管理.exe&lt;/string&gt;
+  &lt;string&gt;D:\work\E\铁路超声波探伤判伤\探伤\回放软件\RailTest免安装版\软件\RailTest\RailTest.exe&lt;/string&gt;
+  &lt;string&gt;D:\回放软件\CT19_V372\CTKJ-436.exe&lt;/string&gt;
+&lt;/ArrayOfString&gt;</Value>
+    </Setting>
+    <Setting Name="PythonScriptLocation" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">D:\Publish\StartScript\StartScript.exe</Value>
+    </Setting>
+    <Setting Name="OfficeLocation" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE</Value>
+    </Setting>
+    <Setting Name="Snipaste" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">D:\Snipaste-2.9.1-Beta-x64\Snipaste.exe</Value>
+    </Setting>
+    <Setting Name="InPath" Type="System.String" Scope="User">
+      <Value Profile="(Default)">.\\ImgFile\\in</Value>
+    </Setting>
+    <Setting Name="DocxPath" Type="System.String" Scope="User">
+      <Value Profile="(Default)">.\\DocxsPath</Value>
+    </Setting>
+    <Setting Name="YoloLocation" Type="System.String" Scope="User">
+      <Value Profile="(Default)">..\yolov9-main\demo.py</Value>
+    </Setting>
+    <Setting Name="MouseMovePixel" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">40</Value>
+    </Setting>
+    <Setting Name="TrackData" Type="System.String" Scope="User">
+      <Value Profile="(Default)">.\\TrackData</Value>
+    </Setting>
+    <Setting Name="ExcelsPath" Type="System.String" Scope="User">
+      <Value Profile="(Default)">.\\ExcelsPath</Value>
+    </Setting>
+    <Setting Name="IsDistictRepeat" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="SqlPath" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">.\\DB\\Dm.db</Value>
+    </Setting>
+    <Setting Name="IsConcealFishScale" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="OutPath" Type="System.String" Scope="User">
+      <Value Profile="(Default)">.\\ImgFile\\out</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>

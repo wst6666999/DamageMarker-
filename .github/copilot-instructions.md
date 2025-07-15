@@ -1,0 +1,3 @@
+我这个项目使用的mvvm包是CommunityToolkit.Mvvm,
+我这个项目使用的ui库是handyControl,
+回答问题的时候用中文回答

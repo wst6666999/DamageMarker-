@@ -148,6 +148,34 @@ namespace DamageMaker.Common
             }
         }
 
+        public static string? ExtractVelocity(this string input) //提取速度信息
+        {
+            if (string.IsNullOrEmpty(input) || input.Length < 8) // 最小长度检查
+                return null;
+
+            int endIndex = input.Length - 1;
+            while (endIndex >= 0 && !char.IsDigit(input[endIndex]))
+            {
+                endIndex--;
+            }
+
+            if (endIndex < 0)
+                return null; // 没有数字
+
+            int startIndex = endIndex;
+            while (startIndex >= 0 && input[startIndex] != ' ')
+            {
+                startIndex--;
+            }
+
+            // 提取这段子串
+            string candidate = input.Substring(startIndex + 1, endIndex - startIndex);
+
+            // 用正则提取浮点数（允许一个）
+            Match match = Regex.Match(candidate, @"\d+(\.\d+)?");
+            return match.Success ? match.Value : null;
+        }
+
         // 辅助方法：安全子串截取
         private static string SafeSubstring(this string str, int start, int length)
         {

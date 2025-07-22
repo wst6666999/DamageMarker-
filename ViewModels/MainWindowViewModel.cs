@@ -15,6 +15,8 @@ using DamageMarker.Models;
 using DamageMarker.Views;
 using HandyControl.Controls;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
@@ -55,13 +57,13 @@ namespace DamageMarker.ViewModels
     public partial class MainWindowViewModel : ObservableObject
     {
         //用于判定停止截图之后是否停止后续判定
-       public bool isAnalyze = false;
+        public bool isAnalyze = false;
         bool isHideNormal = true;
-      
-        private bool isDistinctDamage = Settings.Default.IsDistictRepeat; 
+
+        private bool isDistinctDamage = Settings.Default.IsDistictRepeat;
         public bool IsDistinctDamage
         {
-            get { return isDistinctDamage;}
+            get { return isDistinctDamage; }
             set
             {
                 if (value != isDistinctDamage)
@@ -92,7 +94,7 @@ namespace DamageMarker.ViewModels
         private SetupContent setup = new SetupContent();
         public bool IsModifyResultJson { get; set; } = false;
         Stopwatch stopwatch = new Stopwatch();
-        
+
         [ObservableProperty]
         int allImgCount = 0;
         [ObservableProperty]
@@ -116,7 +118,7 @@ namespace DamageMarker.ViewModels
         int stepIndex = 0;
 
         // 数据库中当前文件夹的ID
-        int sqlFolderId; 
+        int sqlFolderId;
 
         [ObservableProperty]
         Visibility progressVisibility = Visibility.Hidden;
@@ -148,7 +150,7 @@ namespace DamageMarker.ViewModels
 
         string ImgPath;
         [ObservableProperty]
-        string imgFolderName;
+        string imgFolderName; 
         [ObservableProperty]
         string url = "http://127.0.0.1:3333/endpoint";
         //停止的url
@@ -171,7 +173,7 @@ namespace DamageMarker.ViewModels
         public float[][]? damagePoints;
 
         [NotifyCanExecuteChangedFor(nameof(NoDamageCheckCommand), nameof(DamageCheckCommand))]
-       
+
         [ObservableProperty]
         BitmapFrame? imgSource;
 
@@ -198,7 +200,7 @@ namespace DamageMarker.ViewModels
             //ScreenshotOffset = DamageMaker.Properties.Settings.Default.ScreenshotOffset;
             //ScreenshotInterval = DamageMaker.Properties.Settings.Default.ScreenshotInterval;
             //MouseMovePixel = DamageMaker.Properties.Settings.Default.MouseMovePixel;
-           
+
             client.Timeout = TimeSpan.FromSeconds(3600);
 
             DamageFoldersListViewModel.OpenedDamageFolder += SwitchDamageFolder;
@@ -216,7 +218,7 @@ namespace DamageMarker.ViewModels
                         Command = ProcessStartCommand
                     }
                 );
-            }
+            }   
             MenuItems.Add(new MenuItem
             {
                 Header = "✚ 添加回放软件",
@@ -264,7 +266,7 @@ namespace DamageMarker.ViewModels
                 DetailsList.Clear();
                 ImgPath = ThumbnailImgInfos[SelectedIndex].Path;
 
-                isConfirmDamage = SqlImgInfos.Where(x => Path.GetFileName(x.ImgPath) == Path.GetFileName(ImgPath)).FirstOrDefault()?.IsConfirmDamage;      
+                isConfirmDamage = SqlImgInfos.Where(x => Path.GetFileName(x.ImgPath) == Path.GetFileName(ImgPath)).FirstOrDefault()?.IsConfirmDamage;
                 if (isConfirmDamage == true)
                 {
                     HasDamageImg = true;
@@ -281,7 +283,7 @@ namespace DamageMarker.ViewModels
                     HasDamageImg = false;
                 }
 
-               // DamageRemark = SqlImgInfos.Where(x => Path.GetFileName(x.ImgPath) == Path.GetFileName(ImgPath)).FirstOrDefault()?.Remark;
+                // DamageRemark = SqlImgInfos.Where(x => Path.GetFileName(x.ImgPath) == Path.GetFileName(ImgPath)).FirstOrDefault()?.Remark;
 
                 UpdateImgSource(ImgPath);
 
@@ -309,7 +311,7 @@ namespace DamageMarker.ViewModels
             if (target != null)
             {
                 if (target.IsConfirmDamage != isConfirmDamage)
-                {                    
+                {
                     using (var sqlHelper = new SQLHelper(Settings.Default.SqlPath))
                     {
                         int rowsAffected = sqlHelper.UpdateImageIsConfirmDamage(target.ImgId, isConfirmDamage);
@@ -388,98 +390,100 @@ namespace DamageMarker.ViewModels
             DamageDataList = mainData.DamageDataList;
             NeedSavedInfo = mainData.NeedSavedInfo;
 
-         
+
 
 
             if (NeedSavedInfo != null)
             {
                 Console.WriteLine(Settings.Default.SqlPath);
-            using (var sqlHelper = new SQLHelper(Settings.Default.SqlPath))
-            {
-                // 获取 FolderId
-                sqlFolderId = sqlHelper.GetFolderIdByPath(SelectedPath);
+                using (var sqlHelper = new SQLHelper(Settings.Default.SqlPath))
+                {
+                    // 获取 FolderId
+                    sqlFolderId = sqlHelper.GetFolderIdByPath(SelectedPath);
 
-                // 如果数据库中没有该文件夹的数据，先插入文件夹信息
-                if (sqlFolderId < 0)
-                {
-                    sqlFolderId = DataAccess.InsertFolderInfo(sqlHelper, SelectedPath, NeedSavedInfo);
-                }
-                if (sqlFolderId < 0)//插入失败的原因
-                {
-                    Console.WriteLine(sqlHelper.GetLastError());
-                }
-                else
-                {
+                    // 如果数据库中没有该文件夹的数据，先插入文件夹信息
+                    if (sqlFolderId < 0)
+                    {
+                        sqlFolderId = DataAccess.InsertFolderInfo(sqlHelper, SelectedPath, NeedSavedInfo);
+                    }
+                    if (sqlFolderId < 0)//插入失败的原因
+                    {
+                        Console.WriteLine(sqlHelper.GetLastError());
+                    }
+                    else
+                    {
                         var para = new Dictionary<string, object>
                     {
                         { "@FolderId", sqlFolderId }
                     };
-                    var SqlimgCount = sqlHelper.GetCount("Images", para);
-                    if (SqlimgCount == 0)
-                    {
-                        foreach (var file in imgFiles)
+                        var SqlimgCount = sqlHelper.GetCount("Images", para);
+                        if (SqlimgCount == 0)
                         {
-                            SqlImgInfos.Add(new SqlImgInfo
+                            foreach (var file in imgFiles)
                             {
-                                ImgPath = file,
-                                FolderId = sqlFolderId
-                            });
-                        }
+                                SqlImgInfos.Add(new SqlImgInfo
+                                {
+                                    ImgPath = file,
+                                    FolderId = sqlFolderId
+                                });
+                            }
                             SaveSqlImgInfos(SqlImgInfos);
-                        SqlImgInfos = sqlHelper.GetImagesByFolderId(sqlFolderId);
-
-                    }
-                    else if (SqlimgCount > 0)
-                    {
                             SqlImgInfos = sqlHelper.GetImagesByFolderId(sqlFolderId);
-                    }
-                    else if (SqlimgCount < 0)
-                    {
-                        Console.WriteLine($"{sqlHelper.GetLastError()}");
+
+                        }
+                        else if (SqlimgCount > 0)
+                        {
+                            SqlImgInfos = sqlHelper.GetImagesByFolderId(sqlFolderId);
+                        }
+                        else if (SqlimgCount < 0)
+                        {
+                            Console.WriteLine($"{sqlHelper.GetLastError()}");
+                        }
                     }
                 }
-            }
 
             }
             else
+
             {
+                MessageBox.Warning("1");
                 MessageBox.Warning("这个文件夹没有对应的info.json文件,请输入数据后重新打开该文件夹");
             }
 
-                if (!Directory.Exists(damageImgFolderName))
+            if (!Directory.Exists(damageImgFolderName))
+            {
+                Directory.CreateDirectory(damageImgFolderName);
+            }
+
+            string jsonFilePath = Path.Combine(Parameter, "result.json"); //寻找json文件的路径
+            if (DamageDataList != null)
+            {
+                DamageDataList = mainData.ProcessData();
+
+                Console.WriteLine("-----------后端未处理数据详情-----------" + Environment.NewLine);
+                var damageCount = ObtainInfo.GetCategoryAndCount(DamageDataList);
+                damageCount.ForEach(x =>
                 {
-                    Directory.CreateDirectory(damageImgFolderName);
-                }
-
-                string jsonFilePath = Path.Combine(Parameter, "result.json"); //寻找json文件的路径
-                if (DamageDataList != null)
-                {
-                    DamageDataList = mainData.ProcessData();
-
-                    Console.WriteLine("-----------后端未处理数据详情-----------" + Environment.NewLine);
-                    var damageCount = ObtainInfo.GetCategoryAndCount(DamageDataList);
-                    damageCount.ForEach(x =>
-                    {
-                        Console.WriteLine($"{DataConversion.DamageIdToDamageName(x.Value)} id为{x.Value} 共有{x.Key}处伤损");
-                    });
-                    Console.WriteLine("----------------------------------" + Environment.NewLine);
+                    Console.WriteLine($"{DataConversion.DamageIdToDamageName(x.Value)} id为{x.Value} 共有{x.Key}处伤损");
+                });
+                Console.WriteLine("----------------------------------" + Environment.NewLine);
 
 
-                    DamageImgPaths = DamageDataList.Select(x => x.Url).ToList();
-                    DamageImgPaths = DamageImgPaths.OrderBy(File.GetCreationTime).ToList();
-                    AllImgCount = imgFiles.Length;
-                    SingleImgCount = DamageImgPaths.Count;
-                    ModifyImgCommand.NotifyCanExecuteChanged();
-                    InitCategorySummary();
-                    IsEnableThumbnail = true;
-                    ExportReportCommand.NotifyCanExecuteChanged();
-                    GetJsonResultCommand.NotifyCanExecuteChanged();
-                    ThumbnailImgInfos.Clear();
+                DamageImgPaths = DamageDataList.Select(x => x.Url).ToList();
+                DamageImgPaths = DamageImgPaths.OrderBy(File.GetCreationTime).ToList();
+                AllImgCount = imgFiles.Length;
+                SingleImgCount = DamageImgPaths.Count;
+                ModifyImgCommand.NotifyCanExecuteChanged();
+                InitCategorySummary();
+                IsEnableThumbnail = true;
+                ExportReportCommand.NotifyCanExecuteChanged();
+                GetJsonResultCommand.NotifyCanExecuteChanged();
+                ThumbnailImgInfos.Clear();
 
 
 
                 await UpdataThumbnail();
-                await  SaveAllBoxSelectedImg(DamageImgPaths, damageImgFolderName);
+                await SaveAllBoxSelectedImg(DamageImgPaths, damageImgFolderName);
 
                 StepIndex = 2;
 
@@ -501,12 +505,13 @@ namespace DamageMarker.ViewModels
                 }
 
             }
-                else
-                {
-                    ClearDamagePage();
-                    MessageBox.Warning("这个文件夹没有对应的损伤数据,请请求数据后重新打开该文件夹");
-                }
-            
+            else
+            {
+                ClearDamagePage();
+                MessageBox.Warning("2");
+                MessageBox.Warning("这个文件夹没有对应的损伤数据,请请求数据后重新打开该文件夹");
+            }
+
         }
 
         private void SaveSqlImgInfos(List<SqlImgInfo> infos)
@@ -610,7 +615,7 @@ namespace DamageMarker.ViewModels
                         BitmapFrame image = BoxSelected(boxSelectedImg, item);
 
                         SaveBitmapToPng(Path.Combine(SavePath, fileName), image);
-                        
+
                         saveImgCount++;
                         //  }
                     }
@@ -620,400 +625,9 @@ namespace DamageMarker.ViewModels
             Console.WriteLine($"图片伤损绘制{saveImgCount}张完成,");
         }
 
-        /// <summary>
-        /// 从remark中提取作业区间、伤损点和里程数
-        /// </summary>
-        /// <summary>
-        /// 从remark中提取作业区间、伤损点和里程数
-        /// </summary>
-        (string? WorkSection, float[][] DamagePoints, string? Mileage) ParseRemarkInfo(string? remark)
-        {
-            if (string.IsNullOrEmpty(remark))
-                return (null, Array.Empty<float[]>(), null);
-
-            string? workSection = null;
-            string? mileage = null;
-            float[][] damagePoints = Array.Empty<float[]>();
-
-            // 提取作业区间 - 改为从字符串末尾开始查找
-            int wsIdx = remark.LastIndexOf("作业区间");
-            if (wsIdx >= 0)
-            {
-                int start = wsIdx + "作业区间".Length;
-                while (start < remark.Length && (remark[start] == ':' || remark[start] == '：' || remark[start] == '为' || char.IsWhiteSpace(remark[start])))
-                    start++;
-                // 作业区间应该是最后一个字段，直接取到字符串末尾
-                workSection = remark.Substring(start).Trim();
-            }
-
-            // 提取里程数 - 添加更多可能的前缀
-            int mileageIdx = remark.IndexOf("里程数为");
-            if (mileageIdx < 0) mileageIdx = remark.IndexOf("里程");
-            if (mileageIdx >= 0)
-            {
-                int start = mileageIdx + (remark[mileageIdx] == '里' ? "里程数为".Length : "里程".Length);
-                while (start < remark.Length && (remark[start] == ':' || remark[start] == '：' || remark[start] == '为' || char.IsWhiteSpace(remark[start])))
-                    start++;
-                int end = remark.IndexOf("，伤损点", start);
-                if (end == -1) end = remark.Length;
-                mileage = remark.Substring(start, end - start).Trim();
-            }
-
-            // 提取伤损点 - 更精确地确定范围
-            int damageIdx = remark.IndexOf("伤损点");
-            if (damageIdx >= 0)
-            {
-                int start = damageIdx + "伤损点".Length;
-                while (start < remark.Length && (remark[start] == ':' || remark[start] == '：' || char.IsWhiteSpace(remark[start])))
-                    start++;
-                int end = remark.IndexOf("，作业区间", start);
-                if (end == -1) end = remark.Length;
-                string damageStr = remark.Substring(start, end - start).Trim();
-                if (!string.IsNullOrEmpty(damageStr))
-                {
-                    var arrs = damageStr.Split(';', StringSplitOptions.RemoveEmptyEntries);
-                    var result = new List<float[]>();
-                    foreach (var arr in arrs)
-                    {
-                        var nums = arr.Split(',', StringSplitOptions.RemoveEmptyEntries)
-                                      .Select(s => float.TryParse(s, out var f) ? f : 0).ToArray();
-                        if (nums.Length > 0) result.Add(nums);
-                    }
-                    damagePoints = result.ToArray();
-                }
-            }
-
-            return (workSection, damagePoints, mileage);
-        }
-        /// <summary>
-        /// 根据目标 idx 查找 Imgfiles 中匹配的文件路径。
-        /// </summary>
-        public static string FindFilePathByIdx(int targetIdx, List<string> imgFiles)
-        {
-            foreach (string filePath in imgFiles)
-            {
-
-                ParseFileName(filePath, out int currentIdx, out string mileage);
-                if (currentIdx == targetIdx)
-                {
-                    return Path.GetFullPath(filePath); 
-                }
-            }
-            return null; // 未找到
-        }
-
-        /// <summary>
-        /// 检查数据库、比对里程、组装图片、发送后端、保存结果
-        /// </summary>
-        private async Task CheckAndSendToBackend(int idx, string? mileage, List<string> Imgfiles)
-        {
-            List<SqlImgInfo> allSqlImgInfos;
-            using (var sqlHelper = new SQLHelper(Settings.Default.SqlPath))
-            {
-                allSqlImgInfos = sqlHelper.GetAllImages();
-            }
-
-            var damageDataList = MainWindow.MainVm.DamageDataList;
-
-            var sendList = new List<object>();
-
-            // 当前图片的作业区间和里程数
-            var curWorkSection = MainWindowViewModel.NeedSavedInfo?.RailWayInfo.WorkSection;
-            var curMileage = mileage;
-
-            string Normalize(string? s)
-            {
-                if (string.IsNullOrEmpty(s)) return "";
-                return Regex.Replace(s, @"\s+", "")
-                    .Replace("，", ",")
-                    .Replace("。", ".")
-                    .Replace("：", ":")
-                    .Replace(";", ";")
-                    .ToLowerInvariant();
-            }
-
-            // 先查找所有作业区间匹配的 FolderId
-                var matchedFolderIds = allSqlImgInfos
-                    .Where(x => x.FolderId != sqlFolderId && !string.IsNullOrEmpty(x.Remark))
-                    .Select(x => new { Info = x, Parsed = ParseRemarkInfo(x.Remark) })
-                    .Where(x => !string.IsNullOrEmpty(x.Parsed.WorkSection) && Normalize(x.Parsed.WorkSection) == Normalize(curWorkSection))
-                    .Select(x => x.Info.FolderId)
-                    .Distinct()
-                    .ToList();
-
-            // 再在这些文件夹下查找里程数匹配的图片
-            var dbImgInfo = allSqlImgInfos
-                .Where(x => matchedFolderIds.Contains(x.FolderId) && !string.IsNullOrEmpty(x.Remark))
-                .Select(x => new { Info = x, Parsed = ParseRemarkInfo(x.Remark) })
-                .Where(x => !string.IsNullOrEmpty(x.Parsed.Mileage) && Normalize(x.Parsed.Mileage) == Normalize(curMileage))
-                .FirstOrDefault()?.Info;
-
-            // 只在查到数据库图片时才继续
-            if (dbImgInfo == null)
-                return;
-
-            var (dbWorkSection, dbDamage, dbMileage) = ParseRemarkInfo(dbImgInfo.Remark);
-
-            // 比对作业区间和里程数
-            bool isWorkRangeEqual = string.Equals(dbWorkSection?.Trim(), curWorkSection?.Trim(), StringComparison.OrdinalIgnoreCase);
-            bool inWorkRange = string.Equals(dbMileage?.Trim(), curMileage?.Trim(), StringComparison.OrdinalIgnoreCase);
-
-            // 只有在作业区间内且里程数一致时才处理
-            if (inWorkRange && isWorkRangeEqual)
-            {
-                // 临时文件夹路径（确保存在）
-                string tempDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "Temp");
-                if (!Directory.Exists(tempDir))
-                {
-                    Directory.CreateDirectory(tempDir);
-                }
-
-                // 生成唯一临时文件名，避免并发冲突
-                string tempFileName = Path.GetFileName(dbImgInfo.ImgPath);
-                string tempPath = Path.Combine(tempDir, tempFileName);
-
-                try
-                {
-                    if (dbImgInfo.ImageData != null && dbImgInfo.ImageData.Length > 0)
-                    {
-                        //// 验证伤损点数据
-                        //Console.WriteLine($"伤损点数量: {dbDamage?.Length ?? 0}");
-                        //if (dbDamage != null)
-                        //{
-                        //    foreach (var point in dbDamage.Take(5))
-                        //    {
-                        //        Console.WriteLine($"伤损点: {string.Join(",", point)}");
-                        //    }
-                        //}
-
-                        // 保存并标记图片
-                        File.WriteAllBytes(tempPath, dbImgInfo.ImageData);
-                        Console.WriteLine($"已保存图片到临时路径: {tempPath}");
-                    }
-                    else
-                    {
-                        Console.WriteLine("ImageData 为空或长度为0，未写入图片。");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"文件操作错误: {ex.Message}");
-                }
-
-                // 直接用解析出来的伤损点
-                sendList.Add(new { url = tempPath, damage = dbDamage ?? new float[0][] });
-                // 组装左中右三张图片和数据库图片
-                for (int i = idx - 1; i <= idx + 1; i++)
-                {
-                        var path = FindFilePathByIdx(i,Imgfiles);
-                     Console.WriteLine($"当前传给后端图片:{i}\n,{path}");
-                    if (path != null)
-                    {
-                        var damage = damageDataList?.Where(x => Path.GetFileName(x.Url) == Path.GetFileName(path)).FirstOrDefault()?.DamagePoint ?? new float[0][];
-                        sendList.Add(new
-                        {
-                            url = path,
-                            damage
-                        });
-                    }                        
-                }
-
-                // 发送给后端
-                using var httpClient = new HttpClient();
-                string apiUrl = "http://127.0.0.1:3333/process_CH";
-                var response = await httpClient.PostAsJsonAsync(apiUrl, sendList);
-                if (response.IsSuccessStatusCode)
-                {
-                    var json = await response.Content.ReadAsStringAsync();
-                    Console.WriteLine($"后端返回: {json}");
-                    var damageData = JsonSerializer.Deserialize<List<DamageData>>(json);
-
-                    // 首先更新主数据源DamageDataList
-                    foreach (var result in damageData)
-                    {
-                        // 找到对应的原始数据
-                        var originalData = DamageDataList.FirstOrDefault(x =>
-                            x != null &&
-                            !string.IsNullOrEmpty(x.Url) &&
-                            Path.GetFileName(x.Url) == Path.GetFileName(result.Url));
-
-                        if (originalData != null)
-                        {
-                            originalData.DamagePoint = result.DamagePoint;
-                        }
-                        // 立即保存到result.json
-                        AboutJson.SaveJson(DamageDataList,
-                            Path.Combine(Settings.Default.InPath, MainWindow.MainVm.ImgFolderName),
-                            "result.json");
-                        // 更新数据库
-                        var imgInfo = SqlImgInfos.FirstOrDefault(x => Path.GetFileName(x.ImgPath) == Path.GetFileName(result.Url));
-                        if (imgInfo != null)
-                        {
-                            // 伤损信息转为字符串
-                            string damageStr = "";
-                            if (originalData.DamagePoint != null)
-                            {
-                                damageStr = string.Join(";", originalData.DamagePoint.Select(arr => string.Join(",", arr)));
-                            }
-                            var railInfo = MainWindowViewModel.NeedSavedInfo?.RailWayInfo;
-                            string workRange = railInfo?.WorkSection ?? "未知";
-
-                            // 组装remark
-                            string remark = $"当前图片存在厂焊,里程数为{curMileage}，伤损点:{damageStr}，作业区间:{workRange}";
-
-                            // 读取图片文件为 byte[]
-                            byte[] imageBytes = File.ReadAllBytes(result.Url.OutReplaceInString());
-                            DataAccess.UpdateImageRemark(SqlImgInfos, imgInfo.ImgPath, remark);
-                            DataAccess.UpdateImageData(SqlImgInfos, imgInfo.ImgPath, imageBytes);
-                        }
-                    }
-
-                    foreach (var result in damageData)
-                    {
-                        string imgPath = result.Url;
-                        float[][] damagePoints = result.DamagePoint;
-
-                        if (imgPath != tempPath && File.Exists(imgPath.InReplaceOutString()))
-                        {
-                            BitmapFrame boxSelectedImg = BitmapFrame.Create(new Uri(imgPath));
-                            BitmapFrame image = BoxSelected(boxSelectedImg, damagePoints);
-                            SaveBitmapToPng(imgPath.InReplaceOutString(), image); // 覆盖保存
-                            Console.WriteLine($"图片已重绘并保存: {imgPath.InReplaceOutString()}");
-                        }
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        /// 从文件名中解析编号和里程信息。
-        /// 支持格式：
-        /// 1. "编号_里程"（如 "397_175KM999M"）
-        /// 2. "里程_编号"（如 "175KM999M_397"）
-        /// 3. 只有里程（如 "175KM999M"）
-        /// 4. 只有编号（如 "397"）
-        /// </summary>
-        /// <param name="fileName">文件名（不含路径和扩展名）</param>
-        /// <param name="idx">输出的编号（若不存在则为0）</param>
-        /// <param name="mileage">输出的里程（若不存在则为空字符串）</param>
-        public static void ParseFileName(string fileName, out int idx, out string mileage)
-        {
-            idx = 0;
-            mileage = string.Empty;
-
-            string fileNameWithoutExt = Path.GetFileNameWithoutExtension(fileName);
-            string[] parts = fileNameWithoutExt.Split('_');
-
-            if (parts.Length >= 2)
-            {
-                // 情况1和2：两部分，可能是"编号_里程"或"里程_编号"
-                bool firstIsIndex = int.TryParse(parts[0], out idx);
-                bool firstIsMileage = parts[0].Contains("KM") && parts[0].Contains("M");
-
-                bool secondIsIndex = int.TryParse(parts[1], out int tempIndex);
-                bool secondIsMileage = parts[1].Contains("KM") && parts[1].Contains("M");
-
-                if (firstIsIndex && secondIsMileage)
-                {
-                    // 格式：编号_里程 (如 "397_175KM999M")
-                    idx = int.Parse(parts[0]);
-                    mileage = parts[1];
-                }
-                else if (firstIsMileage && secondIsIndex)
-                {
-                    // 格式：里程_编号 (如 "175KM999M_397")
-                    mileage = parts[0];
-                    idx = int.Parse(parts[1]);
-                }
-            }
-            else if (parts.Length == 1)
-            {
-                // 情况3和4：只有一部分，可能是里程或编号
-                if (parts[0].Contains("KM") && parts[0].Contains("M"))
-                {
-                    // 只有里程 (如 "175KM999M")
-                    mileage = parts[0];
-                }
-                else if (int.TryParse(parts[0], out idx))
-                {
-                    // 只有编号 (如 "397")
-                    // idx 已通过 TryParse 赋值
-                }
-            }
-        }
-        async Task ProcessCH(List<string> Imgfiles, string SavePath)
-        {
-            // 当前作业区间
-            var curWorkSection = MainWindowViewModel.NeedSavedInfo?.RailWayInfo?.WorkSection;
-
-            // 规范化方法
-            string Normalize(string? s)
-            {
-                if (string.IsNullOrEmpty(s)) return "";
-                return Regex.Replace(s, @"\s+", "")
-                    .Replace("，", ",")
-                    .Replace("。", ".")
-                    .Replace("：", ":")
-                    .Replace(";", ";")
-                    .ToLowerInvariant();
-            }
-
-            // 获取所有图片信息
-            List<SqlImgInfo> allSqlImgInfos;
-            using (var sqlHelper = new SQLHelper(Settings.Default.SqlPath))
-            {
-                allSqlImgInfos = sqlHelper.GetAllImages();
-            }
-
-            // 查找作业区间匹配的图片（非当前文件夹）
-            var matchedImgs = allSqlImgInfos
-                .Where(x => x.FolderId != sqlFolderId && !string.IsNullOrEmpty(x.Remark))
-                .Select(x => new { Info = x, Parsed = ParseRemarkInfo(x.Remark) })
-                .Where(x => !string.IsNullOrEmpty(x.Parsed.WorkSection) && Normalize(x.Parsed.WorkSection) == Normalize(curWorkSection))
-                .ToList();
-
-            // 获取所有匹配图片的 FolderId（去重）
-            var matchedFolderIds = matchedImgs.Select(x => x.Info.FolderId).Distinct().ToList();
-            Console.WriteLine($"匹配的文件夹ID数量: {matchedFolderIds.Count}");
-            int saveImgCount = 0;
-
-            foreach (var imgFile in Imgfiles)
-            {
-                string fileName = Path.GetFileName(imgFile);
-                string fileNamePath = Path.Combine(SavePath.OutReplaceInString(), fileName);
-
-                if (File.Exists(fileNamePath))
-                {
-                    string fileNameWithoutExt = Path.GetFileNameWithoutExtension(fileNamePath);
-                    string[] parts = fileNameWithoutExt.Split('_');
-
-                    // 更安全的解析方式
-                    int idx = 0;
-                    string mileage = string.Empty;
-
-                    ParseFileName(fileName,out idx,out mileage);
-
-                    //166KM602M
-                    var curMileage = mileage;
-
-                    // 在所有匹配的文件夹下查找里程数匹配的图片
-                    var dbImgInfo = allSqlImgInfos
-                        .Where(x => matchedFolderIds.Contains(x.FolderId) && !string.IsNullOrEmpty(x.Remark))
-                        .Select(x => new { Info = x, Parsed = ParseRemarkInfo(x.Remark) })
-                        .Where(x => !string.IsNullOrEmpty(x.Parsed.Mileage) && Normalize(x.Parsed.Mileage) == Normalize(curMileage))
-                        .FirstOrDefault()?.Info;
-
-                    if (dbImgInfo != null)
-                    {
-                        Console.WriteLine($"正在处理图片: {fileNamePath}");
-                        Console.WriteLine($"当前图片的索引:{idx}");
-                        await CheckAndSendToBackend(idx, curMileage, Imgfiles);
-                        saveImgCount++;
-                    }
-                }
-            }
-            Console.WriteLine($"图片厂焊绘制{saveImgCount}张完成,");
-        }
+      
+       
+       
         #region
         [ObservableProperty]
         bool isHideNormalMarker;
@@ -1162,12 +776,7 @@ namespace DamageMarker.ViewModels
                 Console.WriteLine(Elapsed);
                 DataAnalyzeFinished?.Invoke(Elapsed);
                 ShowThumbnails(Parameter);
-                // 新增：自动触发厂焊分析
-                if (DamageDataList != null && DamageDataList.Count > 0)
-                {
-                    await ProcessCH(DamageImgPaths, damageImgFolderName);
-                    //Growl.Info("厂焊分析完成！");
-                }
+               
                 // 重新加载缩略图
                 await InitializeThumbnailImgInfos();
                 //重新加载项目总览
@@ -1180,7 +789,7 @@ namespace DamageMarker.ViewModels
             }
         }
 
-        public static string railClass;
+        public static string railClass="single";
         /// <summary>
         /// 执行方法后在wpath处生成result.json文件
         /// </summary>

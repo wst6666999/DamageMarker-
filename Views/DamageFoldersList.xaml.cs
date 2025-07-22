@@ -6,6 +6,7 @@ using IWshRuntimeLibrary;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -17,7 +18,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
-
+using DamageMaker.SqliteServer;
 
 
 namespace DamageMaker.Views
@@ -31,7 +32,7 @@ namespace DamageMaker.Views
 
         public DamageFoldersList()
         {
-            InitializeComponent();//加载并解析关联的xaml文件
+            InitializeComponent();
             DataContext = new DamageFoldersListViewModel();
             DamageFoldersListViewModel.OpenedDamageFolder += OnOpenedDamageFolder;
         }
@@ -61,18 +62,14 @@ namespace DamageMaker.Views
             }
         }
 
-        private void DamageFoldersList_Closing(object sender, System.ComponentModel.CancelEventArgs e)
-        {
-
-            //关闭前需要保存信息
-            // 在这里保存Remark数据，比如遍历数据集合保存到数据库
-            
-            this.Close();
-        } 
+      
 
         private void SearchBar_TextChanged(object sender, TextChangedEventArgs e)
         {
 
         }
+        
+
     }
+
 }

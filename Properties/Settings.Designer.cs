@@ -12,7 +12,7 @@ namespace DamageMaker.Properties {
     
     
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "17.12.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "17.14.0.0")]
     internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
         
         private static Settings defaultInstance = ((Settings)(global::System.Configuration.ApplicationSettingsBase.Synchronized(new Settings())));
@@ -56,20 +56,6 @@ namespace DamageMaker.Properties {
             }
             set {
                 this["LastSelectedFolder"] = value;
-            }
-        }
-        
-        [global::System.Configuration.ApplicationScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute(@"<?xml version=""1.0"" encoding=""utf-16""?>
-<ArrayOfString xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"">
-  <string>D:\work\E\铁路超声波探伤判伤\探伤\回放软件\JGT-6M免安装版\软件\JGT-6M回放软件免安装版\JGT-6M信息管理.exe</string>
-  <string>D:\work\E\铁路超声波探伤判伤\探伤\回放软件\RailTest免安装版\软件\RailTest\RailTest.exe</string>
-  <string>D:\回放软件\CT19_V372\CTKJ-436.exe</string>
-</ArrayOfString>")]
-        public global::System.Collections.Specialized.StringCollection AppLocation {
-            get {
-                return ((global::System.Collections.Specialized.StringCollection)(this["AppLocation"]));
             }
         }
         
@@ -214,6 +200,20 @@ namespace DamageMaker.Properties {
             }
             set {
                 this["OutPath"] = value;
+            }
+        }
+        
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute(@"<?xml version=""1.0"" encoding=""utf-16""?>
+<ArrayOfString xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"">
+  <string>D:\work\E\铁路超声波探伤判伤\探伤\回放软件\JGT-6M免安装版\软件\JGT-6M回放软件免安装版\JGT-6M信息管理.exe</string>
+  <string>D:\work\E\铁路超声波探伤判伤\探伤\回放软件\RailTest免安装版\软件\RailTest\RailTest.exe</string>
+  <string>D:\回放软件\CT19_V372\CTKJ-436.exe</string>
+</ArrayOfString>")]
+        public global::System.Collections.Specialized.StringCollection AppLocation {
+            get {
+                return ((global::System.Collections.Specialized.StringCollection)(this["AppLocation"]));
             }
         }
     }

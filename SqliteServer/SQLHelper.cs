@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 
+
 namespace DamageMaker.SqliteServer
 {
     public class SQLHelper : IDisposable
@@ -60,6 +61,8 @@ namespace DamageMaker.SqliteServer
         /// </summary>
         /// <param name="sql">SQL语句</param>
         /// <returns>返回影响的结果数，失败返回 -1</returns>
+        /// public SqlCommand CreateCommand(string sql)
+        
         public int ExecuteSql(string sql)
         {
             try
@@ -763,7 +766,41 @@ namespace DamageMaker.SqliteServer
                 _connection = null;
             }
         }
+        public int UpdateFolderRemark(string folderPath, string? remark)
+        {
+            const string query = @"
+            UPDATE DamageFolders
+            SET Remark = @Remark
+            WHERE RailWayName = @RailWayName;
+                ";
+
+                    var parameters = new Dictionary<string, object?>
+            {
+                { "@RailWayName", folderPath },
+                { "@Remark", remark ?? (object)DBNull.Value }
+            };
+            Console.WriteLine($"更新备注:FolderPath = {folderPath}, Remark = {remark}");
+            return ExecuteNonQuery(query, parameters);
+        }
+
+        public string? GetFolderRemarkById(int folderId)
+        {
+            try
+            {
+                string sql = "SELECT Remark FROM DamageFolders WHERE FolderId = @FolderId LIMIT 1";
+                using var cmd = new SqliteCommand(sql, _connection);
+                cmd.Parameters.AddWithValue("@FolderId", folderId);
+                object result = cmd.ExecuteScalar();
+                return result != null && result != DBNull.Value ? result.ToString() : string.Empty;
+            }
+            catch (Exception ex)
+            {
+                _errorInfo = ex.Message;
+                return string.Empty;
+            }
+        }
     }
+
 }
 
 

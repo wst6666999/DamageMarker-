@@ -8,6 +8,8 @@
     xmlns:local="clr-namespace:DamageMaker.Views"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:vm="clr-namespace:DamageMaker.ViewModels"
+    x:Name="FoldersDataGrid"
+    
     Title="DamageFoldersList"
     Width="1400"
     Height="650"
@@ -59,6 +61,14 @@
         </Style>
     </Window.Resources>
     <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="965*"/>
+            <ColumnDefinition Width="30*"/>
+            <ColumnDefinition Width="18*"/>
+            <ColumnDefinition Width="369*"/>
+            <ColumnDefinition Width="13*"/>
+            <ColumnDefinition Width="5*"/>
+        </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
@@ -66,15 +76,14 @@
         <DataGrid
             x:Name="folderList"
             Grid.Row="0"
-            HorizontalAlignment="Stretch"
-            VerticalAlignment="Stretch"
             AutoGenerateColumns="False"
             CanUserAddRows="False"
             ItemsSource="{Binding DamageFolders}"
             ScrollViewer.VerticalScrollBarVisibility="Visible"
+            
             SelectedIndex="{Binding SelectedIndex}"
             SelectionChanged="folderList_SelectionChanged"
-            SelectionMode="Extended">
+            SelectionMode="Extended" Grid.ColumnSpan="6" Margin="0,0,0,58" Grid.RowSpan="2">
             <DataGrid.RowHeaderTemplate>
                 <DataTemplate>
                     <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, RelativeSource={RelativeSource AncestorType=DataGridRow}}" />
@@ -132,7 +141,7 @@
                 <DataGridTextColumn
                     Header="备注"
                     IsReadOnly="False"
-                    Binding="{Binding Remark,Mode=TwoWay}"
+                    Binding="{Binding Remark,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"
                     ElementStyle="{StaticResource CenterCellStyle}"
                     />
             </DataGrid.Columns>
@@ -140,8 +149,8 @@
 
         <UniformGrid
             Grid.Row="1"
-            Margin="10"
-            Columns="5">
+            Margin="10,10,5,10"
+            Columns="5" Grid.ColumnSpan="5">
             <Button
                 Command="{Binding OpenDocxCommand}"
                 CommandParameter="{Binding ElementName=folderList, Path=SelectedItem}"
@@ -162,7 +171,7 @@
         </UniformGrid>
         <hc:SearchBar 
             HorizontalAlignment="Left" 
-            Margin="1241,10,0,0" 
+            Margin="228,10,0,0" 
             VerticalAlignment="Top" 
             Width="129"
             hc:InfoElement.TitlePlacement="Left"
@@ -170,7 +179,7 @@
             Command="{Binding SearchHistoricalFileCommand}"
             CommandParameter="{Binding Text, RelativeSource={RelativeSource Self}}"
             Style="{StaticResource SearchBarPlus}"
-            Text="{Binding SearchHistoricalFileText}" 
+            Text="{Binding SearchHistoricalFileText}" Grid.Column="3" 
            />
     </Grid>
 </Window>

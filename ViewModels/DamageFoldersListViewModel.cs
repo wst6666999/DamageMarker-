@@ -1,9 +1,12 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using ClosedXML.Excel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DamageMaker.Common;
 using DamageMaker.GenerateReport;
 using DamageMaker.Models;
 using DamageMaker.Properties;
+using DamageMaker.SqliteServer;
+using DamageMarker;
 using DamageMarker.ViewModels;
 using HandyControl.Controls;
 using System;
@@ -12,11 +15,10 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Security.Principal;
 using System.Text;
 using System.Threading.Tasks;
-using System.Security.Principal;
-using DamageMarker;
-using DamageMaker.SqliteServer;
+using System.Windows.Controls;
 
 
 namespace DamageMaker.ViewModels
@@ -29,6 +31,30 @@ namespace DamageMaker.ViewModels
         private ObservableCollection<DamageFoldersInfo> damageFolders =
          new ObservableCollection<DamageFoldersInfo>();
 
+        private readonly string _dbPath = Properties.Settings.Default.SqlPath;
+
+        public void LoadFoldersFromDatabase()
+        {
+            DamageFolders.Clear();
+
+            string[] folderPaths = Directory.GetDirectories(Properties.Settings.Default.InPath);
+            using var sqlHelper = new SQLHelper(_dbPath);
+
+            foreach (var folderPath in folderPaths)
+            {
+                int folderId = sqlHelper.GetFolderIdByPath(folderPath);
+                var info = new DamageFoldersInfo
+                {
+                    FolderName = Path.GetFileName(folderPath),
+                    CreatTime = Directory.GetCreationTime(folderPath),
+                    HasFolderInfo = true,
+                    
+                    // 其他字段初始化也可加入…
+                };
+
+                DamageFolders.Add(info);
+            }
+        }
 
         public ObservableCollection<DamageFoldersInfo> DamageFolders
         {
@@ -110,6 +136,8 @@ namespace DamageMaker.ViewModels
             int serialNumber = 1;//初始化序号
             foreach (var path in imgPaths)
             {
+                using var sqlHelper = new SQLHelper(_dbPath);
+                int folderId = sqlHelper.GetFolderIdByPath(path);
                 DamageFolders.Add(
                     new DamageFoldersInfo
                     {
@@ -125,6 +153,7 @@ namespace DamageMaker.ViewModels
                         HasDocx = docxPaths.Any(x => x.StartsWith(Path.GetFileName(path))),
                         //HasMileage = File.Exists(Path.Combine(path, "OcrResult.json")),
                         HasFolderInfo = File.Exists(Path.Combine(path, "info.json")),
+                        Remark = sqlHelper.GetFolderRemarkById(folderId)
                     }
                 );
             }
@@ -337,6 +366,20 @@ namespace DamageMaker.ViewModels
                 MessageBox.Error($"打开文件夹失败: {ex.Message}");
             }
         }
+
+        public void SaveRemarksToDatabase()
+        {
+            using (var sqlHelper = new SQLHelper(Settings.Default.SqlPath))
+            {
+                foreach (var folder in SelectedFolders)
+                {
+                    sqlHelper.UpdateFolderRemark(folder.FolderName, folder.Remark);
+                   
+                }
+
+            }
+        }
+
     }
 }
 

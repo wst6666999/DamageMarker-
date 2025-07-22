@@ -273,7 +273,7 @@ namespace DamageMaker.Views
                                         if (success)
                                         {
                                             HandyControl.Controls.Growl.SuccessGlobal("删除成功，继续播放...");
-                                            PbWin.ToLeftPlayback();
+                                            PbWin.ToRightPlayback();
                                         }
                                         else
                                         {
@@ -296,7 +296,7 @@ namespace DamageMaker.Views
 
                         // 没有重复数据或用户取消，继续播放
 
-                        PbWin.ToLeftPlayback();
+                        PbWin.ToRightPlayback();
                     }
                 }
                 else

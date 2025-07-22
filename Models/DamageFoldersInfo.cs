@@ -5,7 +5,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
+using System.IO;
+using DamageMaker.Properties;
 namespace DamageMaker.Models
 {
     public partial class DamageFoldersInfo:ObservableObject
@@ -23,12 +24,36 @@ namespace DamageMaker.Models
         public bool HasFolderInfo { get; set;}
         public bool IsReadOnly { get=>!HasFolderInfo;}
 
-        public  string Remark {get; set;} = string.Empty;
-       
+        [ObservableProperty]
+        private string remark = string.Empty;
+
+
+
+        partial void OnRemarkChanged(string? oldValue, string newValue)
+        {
+            try
+            {
+                Console.WriteLine("正在保存备注到数据库...");
+                var sqlHelper = new SQLHelper(Settings.Default.SqlPath);
+              
+                        sqlHelper.UpdateFolderRemark(FolderName,newValue);
+            }
+            catch (Exception ex)
+            {
+                HandyControl.Controls.MessageBox.Error("保存备注失败：" + ex.Message);
+                
+            }
+        }
+
+
+
         public override string ToString()
         {
             return FolderName;
         }
     
+
+
     }
+
 }

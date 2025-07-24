@@ -669,15 +669,15 @@
                             Margin="10"
                             Command="{Binding NoDamageCheckCommand}"
                             CommandParameter="鼠标点击"
-                            IsChecked="{Binding HasNoDamageImg}"
-                            Style="{StaticResource ToggleButtonSuccess}">
+                            IsEnabled="{Binding IsNoDamageBtnEnabled}"
+                            Style="{StaticResource ToggleButtonSuccess}" Checked="ToggleButton_Checked_1">
                             无伤[O]
                         </ToggleButton>
                         <ToggleButton
                             Margin="10"
                             Command="{Binding DamageCheckCommand}"
                             CommandParameter="鼠标点击"
-                            IsChecked="{Binding HasDamageImg}"
+                            IsEnabled="{Binding IsDamageBtnEnabled}"
                             Style="{StaticResource ToggleButtonDanger}">
                             疑似[P]
                         </ToggleButton>

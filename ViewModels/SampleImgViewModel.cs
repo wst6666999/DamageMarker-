@@ -274,7 +274,7 @@ namespace DamageMaker.ViewModels
                     string workRange = railInfo?.WorkSection ?? "未知";
 
                     // 组装remark
-                    string remark = $"当前图片存在厂焊,里程数为{result}，伤损点:{damageStr}，作业区间:{workRange}";
+                    string remark = $"当前图片存在厂焊，里程数为{result}，伤损点:{damageStr}，作业区间:{workRange}";
 
                     // 读取图片文件为 byte[]
                     byte[] imageBytes = File.ReadAllBytes(ImgFullPath.OutReplaceInString());

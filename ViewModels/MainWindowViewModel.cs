@@ -1,11 +1,13 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using DamageMaker.Automation;
 using DamageMaker.Common;
 using DamageMaker.DamageDataProcessing;
 using DamageMaker.FileHandle;
 using DamageMaker.GenerateReport;
 using DamageMaker.ImageProcessing;
+using DamageMaker.Message;
 using DamageMaker.Models;
 using DamageMaker.Properties;
 using DamageMaker.SqliteServer;
@@ -14,6 +16,7 @@ using DamageMaker.Views;
 using DamageMarker.Models;
 using DamageMarker.Views;
 using HandyControl.Controls;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
@@ -23,6 +26,7 @@ using System.Drawing;
 using System.Formats.Asn1;
 using System.Globalization;
 using System.IO;
+using System.Management;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -228,6 +232,51 @@ namespace DamageMarker.ViewModels
             CheckAppStatusPeriodically();
             PlaybackWindow.ScreenshotStart += OnScreenShotStart;
             PlaybackWindow.ScreenshotFinished += OnScreenShotFinished;
+            // 注册消息监听
+            WeakReferenceMessenger.Default.Register<TrackShieldingMessage>(this, (_, msg) =>
+            {
+                _activeBeforeShield = msg.BeforeCount;
+                _activeAfterShield = msg.AfterCount;
+                ApplyShieldingToImages();
+            });
+        }
+
+        private int _activeBeforeShield;
+        private int _activeAfterShield;
+
+        private void ApplyShieldingToImages()
+        {
+            // 如果缩略图列表为空或没有图片，直接返回
+            if (ThumbnailImgInfos == null || ThumbnailImgInfos.Count == 0)
+                return;
+
+            // 首先重置所有图片的测试轨标记
+            foreach (var img in ThumbnailImgInfos)
+            {
+                img.IsTestTrack = false;
+                img.TestTrackType = "";
+            }
+
+            // 处理前屏蔽（标记前N张为"Before"测试轨）
+            int 前屏蔽数量 = Math.Min(_activeBeforeShield, ThumbnailImgInfos.Count);
+            for (int i = 0; i < 前屏蔽数量; i++)
+            {
+                ThumbnailImgInfos[i].IsTestTrack = true;
+                ThumbnailImgInfos[i].TestTrackType = "Before";
+            }
+
+            // 处理后屏蔽（标记后M张为"After"测试轨）
+            int 后屏蔽数量 = Math.Min(_activeAfterShield, ThumbnailImgInfos.Count);
+            int 后屏蔽起始索引 = Math.Max(0, ThumbnailImgInfos.Count - 后屏蔽数量);
+            for (int i = 后屏蔽起始索引; i < ThumbnailImgInfos.Count; i++)
+            {
+                ThumbnailImgInfos[i].IsTestTrack = true;
+                ThumbnailImgInfos[i].TestTrackType = "After";
+            }
+
+            // 刷新UI显示
+            InitCategorySummary();  // 更新分类统计
+            UpdataThumbnail();     // 更新缩略图显示
         }
 
         [RelayCommand]
@@ -338,7 +387,7 @@ namespace DamageMarker.ViewModels
 
             foldersListWindow = new DamageFoldersList();
             foldersListWindow.Owner = Application.Current.MainWindow;
-            foldersListWindow.ShowDialog();
+            foldersListWindow.Show();
         }
 
 
@@ -469,10 +518,13 @@ namespace DamageMarker.ViewModels
                 Console.WriteLine("----------------------------------" + Environment.NewLine);
 
 
+
                 DamageImgPaths = DamageDataList.Select(x => x.Url).ToList();
                 DamageImgPaths = DamageImgPaths.OrderBy(File.GetCreationTime).ToList();
                 AllImgCount = imgFiles.Length;
                 SingleImgCount = DamageImgPaths.Count;
+                
+
                 ModifyImgCommand.NotifyCanExecuteChanged();
                 InitCategorySummary();
                 IsEnableThumbnail = true;
@@ -1181,25 +1233,53 @@ namespace DamageMarker.ViewModels
         DocX document;
 
         [RelayCommand(CanExecute = nameof(IsDamageDataListNotEmpty))]
-        async Task ExportReport()
+        public async Task ExportReportAsync()
         {
-
-            var docxsPath = Settings.Default.DocxPath;
-            await Task.Run(() =>
+            try
             {
-                var doc = new ExportWord(Parameter);
-                doc.GenerateWord(docxsPath + "\\" + ImgFolderName + "钢轨探伤检测报告");
+                IsImporting = true;
+
+                string docxsPath = Settings.Default.DocxPath;
+                string fileName = ImgFolderName + "钢轨探伤检测报告.docx";
+                string saveFilePath = Path.Combine(docxsPath, fileName);
+
+                await Task.Run(() =>
+                {
+                    // 若已存在同名文件，则删除以避免 SaveAs 报错
+                    if (File.Exists(saveFilePath))
+                    {
+                        File.Delete(saveFilePath);
+                    }
+
+                    var doc = new ExportWord(Parameter);
+                    doc.GenerateWord(saveFilePath); // 自动保存到新文件
+                });
+
+                await App.Current.Dispatcher.InvokeAsync(() =>
+                {
+                    MessageBox.Success($"{ImgFolderName} 钢轨探伤检测报告已保存在：{saveFilePath}（已覆盖旧文件）");
+                });
+            }
+            catch (Exception ex)
+            {
+                await App.Current.Dispatcher.InvokeAsync(() =>
+                {
+                    MessageBox.Error("导出失败：" + ex.Message);
+                });
+            }
+            finally
+            {
                 IsImporting = false;
-                MessageBox.Success(ImgFolderName + $"钢轨探伤检测报告 保存在{docxsPath}");
-            });
+            }
         }
-            
 
-        
 
-       
 
- 
+
+
+
+
+
 
 
         #endregion
@@ -1398,6 +1478,33 @@ namespace DamageMarker.ViewModels
             RootCategoryList.Add(new DamageCategorySummaryTree() { Name = "正常标记", Children = new() });
             RootCategoryList.Add(new DamageCategorySummaryTree() { Name = "伤损标记", Children = new() });
             RootCategoryList.Add(new DamageCategorySummaryTree() { Name = $"作业标记 总次数{标记Sum}", Children = new() });
+
+            // 2. 测试轨节点（核心修改：添加子项）
+            RootCategoryList.Add(new DamageCategorySummaryTree()
+            {
+                Name = $"测试轨 (前{_activeBeforeShield}后{_activeAfterShield})",
+                Children = new List<ITreeNode>()
+        {
+            // 屏蔽前测试轨子项
+            new DamageCategoryTree()
+            {
+                Name = "屏蔽前测试轨",
+                Count = _activeBeforeShield,
+                ColorBrush = Brushes.Gray,
+                // 绑定前屏蔽测试轨的详情列表（通过GetTestTrackItems获取）
+                Children = GetTestTrackItems("Before")
+            },
+            // 屏蔽后测试轨子项
+            new DamageCategoryTree()
+            {
+                Name = "屏蔽后测试轨",
+                Count = _activeAfterShield,
+                ColorBrush = Brushes.Gray,
+                // 绑定后屏蔽测试轨的详情列表
+                Children = GetTestTrackItems("After")
+            }
+        }
+            });
 
             // 正常类里面细分
             RootCategoryList[0].Children.Add(new DamageCategorySummaryTree()
@@ -1748,6 +1855,26 @@ namespace DamageMarker.ViewModels
             }
         }
 
+        private List<Details> GetTestTrackItems(string testTrackType)
+        {
+            var result = new List<Details>();
+            if (ThumbnailImgInfos == null) return result;
+
+            foreach (var img in ThumbnailImgInfos)
+            {
+                // 筛选出“前屏蔽”或“后屏蔽”的测试轨
+                if (img.IsTestTrack && img.TestTrackType == testTrackType)
+                {
+                    result.Add(new Details
+                    {
+                        FileName = img.Name, // 显示测试轨文件名
+                        Count = 1 // 每个测试轨计为1条
+                    });
+                }
+            }
+            return result;
+        }
+
         #endregion
         #region 铁轨信息输入
         [ObservableProperty]
@@ -1910,110 +2037,137 @@ namespace DamageMarker.ViewModels
         }
 
 
+        
+        
 
+        [ObservableProperty]
         bool hasNoDamageImg;
 
-     public   bool HasNoDamageImg
+
+        [ObservableProperty]
+        bool hasDamageImg;
+
+        private bool isNoDamageBtnEnabled = true;
+        public bool IsNoDamageBtnEnabled
         {
-            get => hasNoDamageImg;
-            set
+            get => isNoDamageBtnEnabled;
+            set => SetProperty(ref isNoDamageBtnEnabled, value);
+        }
+
+        private bool isDamageBtnEnabled = true;
+        public bool IsDamageBtnEnabled
+        {
+            get => isDamageBtnEnabled;
+            set => SetProperty(ref isDamageBtnEnabled, value);
+        }
+
+        bool CanNoDamageCheck() => ImgSource != null;
+        bool CanDamageCheck() => ImgSource != null;
+
+        [RelayCommand(CanExecute = nameof(CanNoDamageCheck))]
+        void NoDamageCheck()
+        {
+            
+            if (HasNoDamageImg)
             {
+                // 二次点击：取消选择
+                HasNoDamageImg = false;
+                ResetState();
+                UpdateConfirmDamageAndRemark(null, "");
+                IsDamageBtnEnabled = true;
+            }
+            else
+            {
+                // 选择无伤
+                HasNoDamageImg = true;
+                HasDamageImg = false;
 
+                var r = GetRemark();
+                string remarkToSet = string.IsNullOrWhiteSpace(r) ? "无伤" : r;
+                UpdateConfirmDamageAndRemark(false, remarkToSet);
 
-                
-                    SetProperty(ref hasNoDamageImg, value);
-                    DamageCheckCommand.NotifyCanExecuteChanged();
+                DamageRemark = remarkToSet;
+                IsReadRemarkOnly = false;
+                ImgBorderBrush = Brushes.LightGreen;
+                IsDamageBtnEnabled = false;
+            }
 
-                    if (value == true)
-                    {
-                        ImgBorderBrush = Brushes.LightGreen;
-                        IsReadRemarkOnly = false;
-                        UpdateIsConfirmDamage(ImgPath, false);
-                        var r = SqlImgInfos.Where(x => Path.GetFileName(x.ImgPath) == Path.GetFileName(ImgPath)).FirstOrDefault()?.Remark;
+            NoDamageCheckCommand.NotifyCanExecuteChanged();
+            DamageCheckCommand.NotifyCanExecuteChanged();
+        }
 
-                        if (r == null || r == "")
-                        {
-                        DamageRemark = "无伤";
-                        }
-                        else
-                        {
-                            DamageRemark = r;
-                        }
+        [RelayCommand(CanExecute = nameof(CanDamageCheck))]
+        void DamageCheck()
+        {
+            if (HasDamageImg)
+            {
+                // 二次点击：取消选择
+                HasDamageImg = false;
+                ResetState();
+                UpdateConfirmDamageAndRemark(null, "");
+                IsNoDamageBtnEnabled = true; // 解锁无伤按钮
+            }
+            else
+            {
+                // 选择有伤
+                HasDamageImg = true;
+                HasNoDamageImg = false;
 
-                    }
-                    else if (value == false && HasDamageImg == false)
-                    {
-                        UpdateIsConfirmDamage(ImgPath, null);
-                        IsReadRemarkOnly = true;
-                        DamageRemark = "";
-                        ImgBorderBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(211, 211, 211));
-                    
+                var r = GetRemark();
+                string remarkToSet = string.IsNullOrWhiteSpace(r) ? "疑似有伤" : r;
+                UpdateConfirmDamageAndRemark(true, remarkToSet);
 
+                DamageRemark = remarkToSet;
+                IsReadRemarkOnly = false;
+                ImgBorderBrush = Brushes.OrangeRed;
+                IsNoDamageBtnEnabled = false; // 锁定无伤按钮
+            }
+
+            NoDamageCheckCommand.NotifyCanExecuteChanged();
+            DamageCheckCommand.NotifyCanExecuteChanged();
+        }
+
+        void ResetState()
+        {
+            DamageRemark = "";
+            IsReadRemarkOnly = true;
+            ImgBorderBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(211, 211, 211));
+        }
+
+        string? GetRemark()
+        {
+            return SqlImgInfos
+                .FirstOrDefault(x => Path.GetFileName(x.ImgPath) == Path.GetFileName(ImgPath))
+                ?.Remark;
+        }
+
+        void UpdateConfirmDamageAndRemark(bool? isConfirmDamage, string? remark)
+        {
+            var target = SqlImgInfos
+                .FirstOrDefault(x => Path.GetFileName(x.ImgPath) == Path.GetFileName(ImgPath));
+
+            if (target != null)
+            {
+                using var sqlHelper = new SQLHelper(Settings.Default.SqlPath);
+
+                if (target.IsConfirmDamage != isConfirmDamage)
+                {
+                    sqlHelper.UpdateImageIsConfirmDamage(target.ImgId, isConfirmDamage);
+                    target.IsConfirmDamage = isConfirmDamage;
+                }
+
+                if (target.Remark != remark)
+                {
+                    sqlHelper.UpdateImageRemark(target.ImgId, remark);
+                    target.Remark = remark;
                 }
             }
         }
 
-       
-        bool hasDamageImg;
-        public bool HasDamageImg
-        {
-            get => hasDamageImg;
-            set
-            {
-               
-                    SetProperty(ref hasDamageImg, value);
-                    NoDamageCheckCommand.NotifyCanExecuteChanged();
 
-                    if (value == true)
-                    {
-                        ImgBorderBrush = Brushes.OrangeRed;
-                        IsReadRemarkOnly = false;
-                        UpdateIsConfirmDamage(ImgPath, true);
-
-
-
-                        var r = SqlImgInfos.Where(x => Path.GetFileName(x.ImgPath) == Path.GetFileName(ImgPath)).FirstOrDefault()?.Remark;
-                        if (r == null || r == "")
-                        {
-                            DamageRemark = "疑似有伤";
-                        }
-                        else
-                        {
-                            DamageRemark = r;
-                        }
-                    }
-                    else if (value == false && HasNoDamageImg == false)
-                    {
-                        UpdateIsConfirmDamage(ImgPath, null);
-                        IsReadRemarkOnly = true;
-                        DamageRemark = "";
-                        ImgBorderBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(211, 211, 211));
-                    }               
-            }
-        }
-
-
-
-        bool  CanNoDamageCheck() => !HasDamageImg&&ImgSource!=null;
-        bool CanDamageCheck() => !HasNoDamageImg&&ImgSource != null;
-
-        [RelayCommand(CanExecute =nameof(CanNoDamageCheck))]
-        void NoDamageCheck(string str)
-        {
-            if (str == "鼠标点击") return;
-
-            HasNoDamageImg = !HasNoDamageImg;
-        }
-        [RelayCommand(CanExecute = nameof(CanDamageCheck))]
-        void DamageCheck(string str)
-        {
-            if (str=="鼠标点击") return;
-
-            HasDamageImg = !HasDamageImg;
-        }
         #endregion
 
-        
+
     }
 }
 

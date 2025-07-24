@@ -345,7 +345,8 @@ namespace DamageMarker.Views
                             }
 
                             temporarySameNum = 0;
-                        Console.WriteLine(imgFullPath);
+                        //Console.WriteLine(imgFullPath);
+                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] 截图 #{count}: {imgFullPath}");
                         temporaryBitmap1.Save(imgFullPath, System.Drawing.Imaging.ImageFormat.Png);
                             OcrDataList.Add(new OcrData(imgFullPath, Mileagedata));
                         }
@@ -378,8 +379,9 @@ namespace DamageMarker.Views
                         {
                             imgFullPath = filePathIn + $@"\{mileage} _{count++}.png";
                         }
-                    Console.WriteLine("imgFullPath");
-                        temporaryBitmap1.Save(imgFullPath, System.Drawing.Imaging.ImageFormat.Png);
+                    //Console.WriteLine("imgFullPath");
+                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] 截图 #{count}: {imgFullPath}");
+                    temporaryBitmap1.Save(imgFullPath, System.Drawing.Imaging.ImageFormat.Png);
                         OcrDataList.Add(new OcrData(imgFullPath, Mileagedata));
                     }
 

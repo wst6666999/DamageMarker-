@@ -151,5 +151,10 @@ namespace DamageMarker.Views
         {
 
         }
+
+        private void ToggleButton_Checked_1(object sender, RoutedEventArgs e)
+        {
+
+        }
     }
 }

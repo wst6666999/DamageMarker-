@@ -180,7 +180,7 @@
                         <hc:Divider Content="隐藏鱼鳞伤(更改选项后重新打开文件夹生效)" />
                         <CheckBox Width="18" IsChecked="{Binding IsConcealFishScale}">
                             <i:Interaction.Triggers>
-                                <i:EventTrigger EventName="Click"> 
+                                <i:EventTrigger EventName="Click">
                                     <i:InvokeCommandAction Command="{Binding ConcealFishScaleChangedCommand}" />
                                 </i:EventTrigger>
                             </i:Interaction.Triggers>
@@ -202,6 +202,59 @@
                         </TextBox>
                     </StackPanel>
                 </hc:UniformSpacingPanel>
+            </TabItem>
+            <TabItem Header="屏蔽设置">
+                <StackPanel Margin="10">
+                    <!-- 屏蔽测试轨设置 -->
+                    <hc:Divider Content="测试轨屏蔽设置" />
+
+                    <UniformGrid Columns="7" HorizontalAlignment="Center">
+                        <!-- 前屏蔽 -->
+                        <TextBlock Text="屏蔽前" VerticalAlignment="Center"/>
+                        <hc:NumericUpDown 
+                            Value="{Binding HideTestTrackCountBefore, Mode=TwoWay}"
+                            Minimum="0"
+                            Width="60"
+                            Margin="5"/>
+                        <TextBlock Text="张" VerticalAlignment="Center"/>
+
+                        <!-- 间距 -->
+                        <Rectangle Width="20"/>
+
+                        <!-- 后屏蔽 -->
+                        <TextBlock Text="屏蔽后" VerticalAlignment="Center"/>
+                        <hc:NumericUpDown 
+                            Value="{Binding HideTestTrackCountAfter, Mode=TwoWay}"
+                            Minimum="0"
+                            Width="60"
+                            Margin="5"/>
+                        <TextBlock Text="张" VerticalAlignment="Center"/>
+                    </UniformGrid>
+
+                    <!-- 统计信息 -->
+                    <TextBlock 
+                        Text="{Binding TotalHiddenTracks, StringFormat='总计屏蔽: {0}张'}"
+                        HorizontalAlignment="Center"
+                        Margin="0,5"/>
+
+                    <!-- 应用按钮 -->
+                    <Button 
+                        Content="应用屏蔽设置" 
+                        Command="{Binding ApplyTrackFilterCommand}"
+                        Width="120"
+                        HorizontalAlignment="Center"
+                        Margin="0,10"
+                        Style="{StaticResource ButtonPrimary}"
+                        CommandParameter="False"/>
+                    <!-- 重置按钮 -->
+                    <Button 
+                        Content="重置屏蔽" 
+                        Command="{Binding ApplyTrackFilterCommand}"
+                        Width="120"
+                        Margin="5"
+                        Style="{StaticResource ButtonPrimary}"
+                        CommandParameter="True"/>
+                </StackPanel>
             </TabItem>
         </TabControl>
     </StackPanel>

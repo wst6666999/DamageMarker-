@@ -1,5 +1,8 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
+using CommunityToolkit.Mvvm.Messaging.Messages;
+using DamageMaker.Models;
 using DamageMaker.Properties;
 using DamageMarker.ViewModels;
 using HandyControl.Controls;
@@ -10,6 +13,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using DamageMaker.Message;
 
 namespace DamageMaker.ViewModels
 {
@@ -193,6 +197,40 @@ namespace DamageMaker.ViewModels
                 MessageBox.Info("Excel报告路径已经更改为" + FolderDialog.FolderName);
             }
             Settings.Default.Save();
+        }
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(TotalHiddenTracks))]
+        private int hideTestTrackCountBefore;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(TotalHiddenTracks))]
+        private int hideTestTrackCountAfter;
+
+        // 计算总屏蔽数（用于UI显示）
+        public int TotalHiddenTracks =>HideTestTrackCountBefore + HideTestTrackCountAfter;
+
+        [RelayCommand]
+        private void ApplyTrackFilter(object resetFlag)
+        {
+            // 处理重置逻辑
+            if (resetFlag is bool shouldReset && shouldReset)
+            {
+                HideTestTrackCountBefore = 0;
+                HideTestTrackCountAfter = 0;
+                return;
+            }
+
+            // 正常验证逻辑
+            if (HideTestTrackCountBefore < 0 || HideTestTrackCountAfter < 0)
+            {
+                Growl.Error("屏蔽数量不能为负数");
+                return;
+            }
+
+            WeakReferenceMessenger.Default.Send(new TrackShieldingMessage(
+                BeforeCount: HideTestTrackCountBefore,
+                AfterCount: HideTestTrackCountAfter
+            ));
         }
     }
 }

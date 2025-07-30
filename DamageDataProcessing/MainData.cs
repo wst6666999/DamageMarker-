@@ -47,6 +47,10 @@ namespace DamageMaker.DamageDataProcessing
             {
                 DamageDataList = DataFilter.DistictRepeatedDamage(DamageDataList, NeedSavedInfo);
             }
+            //去除damage为空
+            DamageDataList=DamageDataList
+                .Where(x => x.DamagePoint != null && x.DamagePoint.Length > 0)
+                .ToList();
             return DamageDataList;
         }
     }

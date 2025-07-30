@@ -146,7 +146,7 @@ namespace DamageMaker.Views
                                         // 6. 显示操作结果
                                         if (success)
                                         {
-                                            HandyControl.Controls.Growl.SuccessGlobal("删除成功，继续播放...");
+                                           
                                             PbWin.ToLeftPlayback();
                                         }
                                         else
@@ -160,7 +160,7 @@ namespace DamageMaker.Views
                                     else if (result2 == MessageBoxResult.No)
                                     {
                                         // 用户选择不继续，停止播放
-                                        Console.WriteLine("1");
+                                        
                                         HandyControl.Controls.Growl.InfoGlobal("操作已取消，停止截图...");
                                         return;
                                     }

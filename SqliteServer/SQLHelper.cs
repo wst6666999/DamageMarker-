@@ -799,7 +799,26 @@ namespace DamageMaker.SqliteServer
                 return string.Empty;
             }
         }
+
+        public int? GetIsConfirmDamage(long folderId)
+        {
+
+            string sql = "SELECT IsConfirmDamage FROM Images WHERE ImageId = @FolderId LIMIT 1";
+            EnsureConnectionOpen();
+            using var cmd = new SqliteCommand(sql, _connection);
+            cmd.Parameters.AddWithValue("@FolderId", folderId);
+
+            var result = cmd.ExecuteScalar();
+
+            if (result == null || result == DBNull.Value)
+                return null;
+
+            return Convert.ToInt32(result);
+        }
+
     }
+
+
 
 }
 

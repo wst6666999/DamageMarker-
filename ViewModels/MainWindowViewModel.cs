@@ -121,6 +121,10 @@ namespace DamageMarker.ViewModels
         [NotifyCanExecuteChangedFor(nameof(ShowAllBoxSelectedCommand))]
         int stepIndex = 0;
 
+        [ObservableProperty]
+        private System.Windows.Media.Brush background = Brushes.White;
+
+
         // 数据库中当前文件夹的ID
         int sqlFolderId;
 
@@ -179,7 +183,9 @@ namespace DamageMarker.ViewModels
         [NotifyCanExecuteChangedFor(nameof(NoDamageCheckCommand), nameof(DamageCheckCommand))]
 
         [ObservableProperty]
-        BitmapFrame? imgSource;
+        ImageSource? imgSource;
+
+
 
         ObservableCollection<MenuItem> menuItems = new ObservableCollection<MenuItem>();
         public ObservableCollection<MenuItem> MenuItems
@@ -495,7 +501,7 @@ namespace DamageMarker.ViewModels
             else
 
             {
-                MessageBox.Warning("1");
+              
                 MessageBox.Warning("这个文件夹没有对应的info.json文件,请输入数据后重新打开该文件夹");
             }
 
@@ -560,7 +566,7 @@ namespace DamageMarker.ViewModels
             else
             {
                 ClearDamagePage();
-                MessageBox.Warning("2");
+               
                 MessageBox.Warning("这个文件夹没有对应的损伤数据,请请求数据后重新打开该文件夹");
             }
 
@@ -1463,8 +1469,21 @@ namespace DamageMarker.ViewModels
         private void InitCategorySummary(int DisplayedRulesCount=10)
         {
 
-            List<DamageData> Datas = DamageDataList;
-            var categoryAndCount = ObtainInfo.GetCategoryAndCount(Datas);
+            // 正确做法：统一数据源
+            var testTrackFiles = DamageDataList
+                .Select(data => Path.GetFileName(data.Url.Split('?')[0]))
+                .Intersect(ThumbnailImgInfos
+                    .Where(img => img.IsTestTrack)
+                    .Select(img => Path.GetFileName(img.Path.Split('?')[0]))
+                .ToHashSet());
+
+            // 正确过滤非测试轨数据
+            var nonTestTrackDatas = DamageDataList
+                .Where(data => !testTrackFiles.Contains(Path.GetFileName(data.Url.Split('?')[0])))
+                .ToList();
+
+            // 4. 使用过滤后的数据进行后续处理
+            var categoryAndCount = ObtainInfo.GetCategoryAndCount(nonTestTrackDatas);
 
             var 标记Sum = CalculateSum(categoryAndCount, 14, 15, 16, 17, 18, 19, 39, 46, 47);
             var 焊缝Sum = CalculateSum(categoryAndCount, 2, 11, 22);
@@ -1552,7 +1571,7 @@ namespace DamageMarker.ViewModels
             var 轨腰Category = (RootCategoryList[1].Children[1] as DamageCategorySummaryTree)?.Children;
             var 轨底Category = (RootCategoryList[1].Children[2] as DamageCategorySummaryTree)?.Children;
 
-            
+
 
             foreach (var x in categoryAndCount)
             {
@@ -1566,7 +1585,7 @@ namespace DamageMarker.ViewModels
                                 Name = $"{DamageIdToDamageName(x.Value)}",
                                 Count = x.Key,
                                 ColorBrush = Brushes.Green,
-                                Children = GetCategorySummary(x.Value, DamageDataList)
+                                Children = GetCategorySummary(x.Value, nonTestTrackDatas)
                                 .OrderByDescending(x => x.Count).ToList()
                             });
                     }
@@ -1577,7 +1596,7 @@ namespace DamageMarker.ViewModels
                             Name = $"{DamageIdToDamageName(x.Value)}",
                             Count = x.Key,
                             ColorBrush = Brushes.Green,
-                            Children = GetCategorySummary(x.Value, DamageDataList)
+                            Children = GetCategorySummary(x.Value, nonTestTrackDatas)
                         .OrderByDescending(x => x.Count).ToList()
                         });
                     }
@@ -1592,7 +1611,7 @@ namespace DamageMarker.ViewModels
                             {
                                 Name = $"{DamageIdToDamageName(x.Value)}",
                                 Count = x.Key,
-                                Children = GetCategorySummary(x.Value, DamageDataList,true)
+                                Children = GetCategorySummary(x.Value, nonTestTrackDatas, true)
                                 .OrderByDescending(x => x.weight).ToList()
                             });
                         }
@@ -1602,7 +1621,7 @@ namespace DamageMarker.ViewModels
                             {
                                 Name = $"{DamageIdToDamageName(x.Value)}",
                                 Count = x.Key,
-                                Children = GetCategorySummary(x.Value, DamageDataList, true)
+                                Children = GetCategorySummary(x.Value, nonTestTrackDatas, true)
                                 .OrderByDescending(x => x.weight).ToList()
                             });
                         }
@@ -1612,7 +1631,7 @@ namespace DamageMarker.ViewModels
                             {
                                 Name = $"{DamageIdToDamageName(x.Value)}",
                                 Count = x.Key,
-                                Children = GetCategorySummary(x.Value, DamageDataList, true)
+                                Children = GetCategorySummary(x.Value, nonTestTrackDatas, true)
                                 .OrderByDescending(x => x.weight).ToList()
                             });
                         }
@@ -1622,7 +1641,7 @@ namespace DamageMarker.ViewModels
                             {
                                 Name = $"{DamageIdToDamageName(x.Value)}",
                                 Count = x.Key,
-                                Children = GetCategorySummary(x.Value, DamageDataList, true)
+                                Children = GetCategorySummary(x.Value, nonTestTrackDatas, true)
                                 .OrderByDescending(x => x.weight).ToList()
                             });
                         }
@@ -1637,7 +1656,7 @@ namespace DamageMarker.ViewModels
                             Name = $"{DamageIdToDamageName(x.Value)}",
                             Count = x.Key,
                             ColorBrush = Brushes.YellowGreen,
-                            Children = GetCategorySummary(x.Value, DamageDataList)
+                            Children = GetCategorySummary(x.Value, nonTestTrackDatas)
                                               .OrderByDescending(x => x.Count).ToList()
                         });
                     }
@@ -1648,7 +1667,7 @@ namespace DamageMarker.ViewModels
                             Name = $"{DamageIdToDamageName(x.Value)}",
                             Count = x.Key,
                             ColorBrush = Brushes.YellowGreen,
-                            Children = GetCategorySummary(x.Value, DamageDataList)
+                            Children = GetCategorySummary(x.Value, nonTestTrackDatas)
                                               .OrderByDescending(x => x.Count).ToList()
                         });
                     }
@@ -2060,14 +2079,16 @@ namespace DamageMarker.ViewModels
             get => isDamageBtnEnabled;
             set => SetProperty(ref isDamageBtnEnabled, value);
         }
-
+        private Details _selectedDetail;
+        
         bool CanNoDamageCheck() => ImgSource != null;
         bool CanDamageCheck() => ImgSource != null;
 
         [RelayCommand(CanExecute = nameof(CanNoDamageCheck))]
-        void NoDamageCheck()
+        void NoDamageCheck()//判断当前图片是否有伤损，一次点击为无伤损，二次点击取消
         {
-            
+            int? IsConfirmDamage = GetIsConfirmDamage();
+
             if (HasNoDamageImg)
             {
                 // 二次点击：取消选择
@@ -2075,56 +2096,71 @@ namespace DamageMarker.ViewModels
                 ResetState();
                 UpdateConfirmDamageAndRemark(null, "");
                 IsDamageBtnEnabled = true;
-            }
-            else
+                Background = Brushes.Yellow;
+            }        
+            else 
             {
                 // 选择无伤
                 HasNoDamageImg = true;
                 HasDamageImg = false;
-
+               
                 var r = GetRemark();
                 string remarkToSet = string.IsNullOrWhiteSpace(r) ? "无伤" : r;
                 UpdateConfirmDamageAndRemark(false, remarkToSet);
-
+                Background = Brushes.LightGreen;
                 DamageRemark = remarkToSet;
                 IsReadRemarkOnly = false;
-                ImgBorderBrush = Brushes.LightGreen;
+                ImgBorderBrush = Brushes.Green;
                 IsDamageBtnEnabled = false;
             }
-
+            
             NoDamageCheckCommand.NotifyCanExecuteChanged();
             DamageCheckCommand.NotifyCanExecuteChanged();
+
+           
         }
 
         [RelayCommand(CanExecute = nameof(CanDamageCheck))]
-        void DamageCheck()
+        void DamageCheck()//判断当前图片是否有伤损，一次点击为有伤损，二次点击取消
         {
+            
             if (HasDamageImg)
             {
                 // 二次点击：取消选择
                 HasDamageImg = false;
                 ResetState();
                 UpdateConfirmDamageAndRemark(null, "");
+                Background = Brushes.Yellow;
                 IsNoDamageBtnEnabled = true; // 解锁无伤按钮
+               
             }
-            else
+            else 
             {
                 // 选择有伤
                 HasDamageImg = true;
                 HasNoDamageImg = false;
-
+               
                 var r = GetRemark();
                 string remarkToSet = string.IsNullOrWhiteSpace(r) ? "疑似有伤" : r;
                 UpdateConfirmDamageAndRemark(true, remarkToSet);
 
                 DamageRemark = remarkToSet;
-                IsReadRemarkOnly = false;
+              IsReadRemarkOnly = false;
                 ImgBorderBrush = Brushes.OrangeRed;
                 IsNoDamageBtnEnabled = false; // 锁定无伤按钮
+                Background = Brushes.OrangeRed;
             }
+           
+            //先通过当前点击图片是否有伤标记
+
+
+            // 首先判定改图片是否无伤标记
+          
 
             NoDamageCheckCommand.NotifyCanExecuteChanged();
             DamageCheckCommand.NotifyCanExecuteChanged();
+
+            
         }
 
         void ResetState()
@@ -2141,6 +2177,7 @@ namespace DamageMarker.ViewModels
                 ?.Remark;
         }
 
+        //更新数据库中某张图片的“是否确认伤损状态”和备注信息
         void UpdateConfirmDamageAndRemark(bool? isConfirmDamage, string? remark)
         {
             var target = SqlImgInfos
@@ -2162,12 +2199,61 @@ namespace DamageMarker.ViewModels
                     target.Remark = remark;
                 }
             }
+
+
         }
 
+        int? GetIsConfirmDamage()
+        {
+            bool? IsConfirmDamage = SqlImgInfos
+               .FirstOrDefault(x => Path.GetFileName(x.ImgPath) == Path.GetFileName(ImgPath))
+               ?.IsConfirmDamage;
 
+            if (IsConfirmDamage == null)
+            {
+                return null; // 如果没有找到对应的记录，返回 null
+            }
+            else if (IsConfirmDamage == true)
+            {
+                return 1; // 有伤
+            }
+            else
+            {
+                return 0; // 无伤
+            }
+        }
+       
         #endregion
 
 
+
+
+        [RelayCommand]
+        
+        private void TreeItemClick(DamageCategoryTree? clickedItem)
+        {
+            Debug.WriteLine($"点击节点：{clickedItem?.Name}");
+            if (clickedItem == null) return;
+
+            clickedItem.ColorBrush = Brushes.YellowGreen;
+        }
+
+
+        
+            [RelayCommand]
+            private void DetailItemClick(Details? clickedDetail)
+            {
+                if (clickedDetail == null)
+                    return;
+
+                // 设置为绿色（你可以自定义颜色）
+                clickedDetail.ColorBrush = Brushes.YellowGreen;
+            }
+
+        public ObservableCollection<Details> DetailsList1 { get; set; } = new();
+
+        
+        
     }
 }
 

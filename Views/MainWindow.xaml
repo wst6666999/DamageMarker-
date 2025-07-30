@@ -6,7 +6,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:hc="https://handyorg.github.io/handycontrol"
     xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
-    xmlns:local="clr-namespace:DamageMarker.Views"
+    xmlns:local="clr-namespace:DamageMaker.Views"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:md="clr-namespace:DamageMaker.Models"
     xmlns:system="clr-namespace:System;assembly=netstandard"
@@ -33,6 +33,8 @@
             Key="S"
             Command="{Binding ShowAllBoxSelectedCommand}"
             CommandParameter="键盘触发" />
+        <KeyBinding
+            Key="W" Modifiers="Ctrl" Command="{Binding WinClosingCommand}"/>
     </Window.InputBindings>
     <i:Interaction.Triggers>
         <i:EventTrigger EventName="Closing">
@@ -60,8 +62,8 @@
                 </Style>
             </Grid.Resources>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="11*" />
-                <ColumnDefinition Width="53*" />
+                <ColumnDefinition Width="49*" />
+                <ColumnDefinition Width="191*" />
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
                 <RowDefinition Height="2*" />
@@ -100,62 +102,78 @@
             </StackPanel>
             <StackPanel
                 Grid.Row="1"
-                Grid.Column="1"
-                Width="390"
-                Height="60"
-                Margin="1212,0,0,0"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Center"
-                Effect="{StaticResource EffectShadow4}">
-                <StackPanel Orientation="Horizontal">
+                    Grid.Column="1"
+                    Width="390"
+                    Height="60"
+                    Margin="1174,0,0,0"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Center"
+                    Background="Transparent">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                     <CheckBox
                         FontSize="12"
+                        Foreground="{StaticResource PrimaryTextBrush}"
                         IsChecked="{Binding IsDetectionAsynChecked}"
                         IsEnabled="{Binding IsDetectionAsynEnable}">
                         探伤软件同步搜索
                     </CheckBox>
-                    <TextBlock Margin="30,0" Text="6M">
+                    <TextBlock 
+                        Margin="30,0" 
+                        Text="6M"
+                        FontSize="12"
+                        FontWeight="Normal"
+                        VerticalAlignment="Center">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
+                                <Setter Property="Foreground" Value="{StaticResource SecondaryTextBrush}"/>
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding Is6MRunning}" Value="True">
-                                        <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}" />
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding Is6MRunning}" Value="False">
-                                        <Setter Property="Foreground" Value="{StaticResource ThirdlyTextBrush}" />
+                                        <Setter Property="Foreground" Value="{StaticResource PrimaryTextBrush}"/>
+                                        <Setter Property="FontWeight" Value="SemiBold"/>
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
                         </TextBlock.Style>
                     </TextBlock>
-                    <TextBlock Text="8C">
+
+                    <TextBlock 
+                        Text="8C"
+                        FontSize="12"
+                        FontWeight="Normal"
+                        VerticalAlignment="Center">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
+                                <Setter Property="Foreground" Value="{StaticResource SecondaryTextBrush}"/>
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding Is8CRunning}" Value="True">
-                                        <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}" />
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding Is8CRunning}" Value="False">
-                                        <Setter Property="Foreground" Value="{StaticResource ThirdlyTextBrush}" />
+                                        <Setter Property="Foreground" Value="{StaticResource PrimaryTextBrush}"/>
+                                        <Setter Property="FontWeight" Value="SemiBold"/>
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
                         </TextBlock.Style>
                     </TextBlock>
                 </StackPanel>
+
                 <hc:SearchBar
-                    Width="350"
-                    Height="45"
-                    Margin="20,0"
+                    Width="276"
+                    Height="32"
+                    Margin="15,5,0,0"
                     hc:InfoElement.Placeholder="格式为:300km200(中间以km或KM为分割)"
                     hc:InfoElement.Title="里程定位"
                     hc:InfoElement.TitlePlacement="Left"
-                    hc:InfoElement.TitleWidth="80"
+                    hc:InfoElement.TitleWidth="70"
+                    Background="{StaticResource LightBackgroundBrush}"
+                    BorderBrush="{StaticResource BorderBrush}"
                     Command="{Binding SearchMileageCommand}"
                     CommandParameter="{Binding Text, RelativeSource={RelativeSource Self}}"
+                    FontSize="12"
                     Style="{StaticResource SearchBarPlus}"
-                    Text="{Binding SearchMileageText}"
-                    TextChanged="SearchBar_TextChanged" />
+                    Text="{Binding SearchMileageText}">
+                    <hc:SearchBar.Effect>
+                        <DropShadowEffect BlurRadius="2" Opacity="0.1" ShadowDepth="1"/>
+                    </hc:SearchBar.Effect>
+                </hc:SearchBar>
             </StackPanel>
             <hc:Drawer
                 Name="DrawerLeft"
@@ -163,7 +181,6 @@
                 Dock="Left"
                 Effect="{StaticResource EffectShadow4}"
                 ShowMode="Push" />
-            <StackPanel />
             <StackPanel
                 Grid.Row="0"
                 Width="0"
@@ -203,99 +220,227 @@
                 Grid.Row="3"
                 Grid.RowSpan="1"
                 Grid.Column="1"
-                Margin="10,0,10,32"
+                Header="{x:Null}"
+                Background="Transparent"
+                Margin="0,0,10,32"
                 hc:TitleElement.TitlePlacement="Top"
                 Effect="{StaticResource EffectShadow4}"
-                Header="图片展示区"
                 Style="{StaticResource InputElementBaseStyle}">
+
+                <GroupBox.Resources>
+                    <!-- 自定义ListBox样式 -->
+                    <Style x:Key="ModernListBoxStyle" TargetType="ListBox">
+                        <Setter Property="Background" Value="Transparent"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                        <Setter Property="Padding" Value="5"/>
+                        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto"/>
+                    </Style>
+                    <!-- 自定义ListBoxItem样式 -->
+                    <Style x:Key="ModernListBoxItemStyle" TargetType="ListBoxItem">
+                        <Setter Property="Background" Value="Transparent"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                        <Setter Property="Margin" Value="5"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="ListBoxItem">
+                                    <Border
+                                        x:Name="Border"
+                                        Background="{TemplateBinding Background}"
+                                        BorderBrush="#E0E0E0"
+                                        BorderThickness="1"
+                                        CornerRadius="8"
+                                        SnapsToDevicePixels="True">
+                                        <Grid>
+                                            <Border
+                                                x:Name="InnerBorder"
+                                                Background="{TemplateBinding Background}"
+                                                BorderThickness="0"
+                                                CornerRadius="6"
+                                                Margin="1"/>
+                                            <ContentPresenter
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center"
+                                            Margin="10"/>
+                                        </Grid>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Border" Property="BorderBrush" Value="#4CAF50"/>
+                                            <Setter TargetName="Border" Property="Effect">
+                                                <Setter.Value>
+                                                    <DropShadowEffect BlurRadius="8" ShadowDepth="0" Color="#4CAF50" Opacity="0.3"/>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Trigger>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter TargetName="Border" Property="BorderBrush" Value="#2196F3"/>
+                                            <Setter TargetName="InnerBorder" Property="Background" Value="#E3F2FD"/>
+                                            <Setter TargetName="Border" Property="Effect">
+                                                <Setter.Value>
+                                                    <DropShadowEffect BlurRadius="12" ShadowDepth="0" Color="#2196F3" Opacity="0.3"/>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </GroupBox.Resources>
+
                 <hc:ScrollViewer hc:ScrollViewerAttach.Orientation="Horizontal">
                     <ListBox
                         x:Name="ThumbnailList"
                         ItemsSource="{Binding ThumbnailImgInfos}"
-                        ScrollViewer.HorizontalScrollBarVisibility="Auto"
                         SelectedIndex="{Binding SelectedIndex}"
                         SelectedItem="{Binding SelectedThumbnailImg}"
                         SelectionChanged="ThumbnailList_SelectionChanged"
-                        Style="{x:Null}"
+                        Style="{StaticResource ModernListBoxStyle}"
+                        ItemContainerStyle="{StaticResource ModernListBoxItemStyle}"
                         VirtualizingStackPanel.IsVirtualizing="True"
                         VirtualizingStackPanel.VirtualizationMode="Recycling">
+
                         <ListBox.Resources>
                             <system:Double x:Key="{x:Static SystemParameters.HorizontalScrollBarButtonWidthKey}">80</system:Double>
                         </ListBox.Resources>
+
                         <ListBox.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <VirtualizingStackPanel Orientation="Horizontal" />
                             </ItemsPanelTemplate>
                         </ListBox.ItemsPanel>
+
                         <i:Interaction.Triggers>
                             <i:EventTrigger EventName="SelectionChanged">
                                 <i:InvokeCommandAction Command="{Binding ImgSelectionChangedCommand}" />
                             </i:EventTrigger>
                         </i:Interaction.Triggers>
+
                         <ListBox.ItemTemplate>
                             <DataTemplate>
                                 <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <!-- 美化文本显示 -->
                                     <TextBlock
-                                        Width="200"
-                                        Margin="10"
-                                        Text="{Binding Name}" />
+                                        Width="180"
+                                        Margin="0,5,0,0"
+                                        Padding="5"
+                                        HorizontalAlignment="Center"
+                                        FontSize="12"
+                                        Foreground="#333333"
+                                        Text="{Binding Name}"
+                                        TextAlignment="Center"
+                                        TextTrimming="CharacterEllipsis"
+                                        TextWrapping="Wrap"/>
                                 </StackPanel>
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>
                 </hc:ScrollViewer>
             </GroupBox>
+            <TextBlock
+                Width="80"  
+                FontSize="16"  
+                Text="图片展示区"
+                FontWeight="Bold"
+                VerticalAlignment="Top"
+                HorizontalAlignment="Left"
+                Margin="10,46,0,0"
+                Grid.Column="1" 
+                Grid.Row="1"
+                Height="32"
+                Foreground="Blue"  
+                RenderTransformOrigin="0.5,0.5" Grid.RowSpan="2">
+
+                <TextBlock.Effect>
+                    <DropShadowEffect 
+                        Color="#33000000" 
+                        BlurRadius="4" 
+                        ShadowDepth="1" 
+                        Direction="315" 
+                        Opacity="0.3"/>
+                </TextBlock.Effect>
+                <TextBlock.RenderTransform>
+                    <TransformGroup>
+                        <TranslateTransform Y="2"/>
+                    </TransformGroup>
+                </TextBlock.RenderTransform>
+                <TextBlock.Triggers>
+                    <EventTrigger RoutedEvent="MouseEnter">
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <ColorAnimation 
+                        Storyboard.TargetProperty="Foreground.Color"
+                        To="#FF7043"  
+                                    Duration="0:0:0.3"/>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </EventTrigger>
+                    <EventTrigger RoutedEvent="MouseLeave">
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <ColorAnimation 
+                                    Storyboard.TargetProperty="Foreground.Color"
+                                    To="#4A6BFF"  
+                                    Duration="0:0:0.3"/>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </EventTrigger>
+                </TextBlock.Triggers>
+            </TextBlock>
             <TabControl
                 Grid.Row="2"
                 Grid.RowSpan="4"
-                Margin="8,8,8,8"
+                Margin="8,8,10,8"
                 Background="Transparent">
                 <TabControl.Resources>
                     <Style BasedOn="{StaticResource TabControlCapsuleSolid}" TargetType="TabControl">
                         <Setter Property="Background" Value="Transparent" />
                         <Setter Property="BorderBrush" Value="Transparent" />
-                        <Setter Property="BorderThickness" Value="3" />
+                        <Setter Property="BorderThickness" Value="1" />
                         <Setter Property="Effect" Value="{StaticResource EffectShadow4}" />
                     </Style>
                 </TabControl.Resources>
-                <TabItem>
+                <TabItem >
                     <TabItem.Header>
                         <TextBlock
                             FontSize="{StaticResource SubHeadFontSize}"
                             Foreground="{StaticResource DarkInfoBrush}"
                             Text="功能区" />
                     </TabItem.Header>
-                    <StackPanel>
+                    <StackPanel 
+                        Background="Transparent" 
+                        HorizontalAlignment="Center"  
+                        VerticalAlignment="Top">
                         <GroupBox
-                            Height="300"
-                            Margin="20"
-                            Effect="{StaticResource EffectShadow4}"
-                            Header="分析功能"
-                            Style="{StaticResource GroupBoxTab.Small}">
+                            Height="353"
+                            Width="332"
+                            Style="{StaticResource GroupBoxTab.Small}"
+                            Background="{DynamicResource RegionBrush}"
+                            Margin="0,10">
                             <UniformGrid Columns="0" Rows="3">
                                 <Menu
                                     Width="130"
                                     Height="40"
-                                    BorderThickness="2"
+                                    BorderThickness="1"
                                     Effect="{StaticResource EffectShadow4}"
-                                    Style="{StaticResource InputElementBaseStyle}">
+                                    Style="{StaticResource InputElementBaseStyle}"
+                                    Background="#4A6BFF">
                                     <MenuItem ItemsSource="{Binding MenuItems}">
                                         <MenuItem.Header>
-                                            <StackPanel
-                                                Width="120"
+                                            <Border 
+                                                Width="111" 
                                                 Height="38"
-                                                HorizontalAlignment="Center"
-                                                Orientation="Horizontal">
+                                                Background="#4A6BFF"
+                                                CornerRadius="8"
+                                                Padding="0"
+                                                SnapsToDevicePixels="True">
                                                 <TextBlock
-                                                    Width="120"
-                                                    Height="38"
-                                                    HorizontalAlignment="Center"
-                                                    VerticalAlignment="Center"
+                                                    Text="选择软件"
+                                                    Foreground="White"
+                                                    FontWeight="SemiBold"
                                                     FontSize="16"
-                                                    Foreground="{DynamicResource PrimaryTextBrush}">
-                                                    选择软件
-                                                </TextBlock>
-                                            </StackPanel>
+                                                    TextAlignment="Center" Margin="0,8,0,0" VerticalAlignment="Top"/>
+                                            </Border>
                                         </MenuItem.Header>
                                         <MenuItem.ItemTemplate>
                                             <DataTemplate>
@@ -324,20 +469,19 @@
                         </GroupBox>
                         <GroupBox
                             Grid.Row="4"
-                            Height="350"
-                            Margin="20"
-                            Effect="{StaticResource EffectShadow4}"
-                            Header="系统功能"
-                            Style="{StaticResource GroupBoxTab.Small}">
+                            Height="337"
+                            Margin="0,10"
+                            Style="{StaticResource GroupBoxTab.Small}"
+                            Background="{DynamicResource RegionBrush}" Width="332">
                             <UniformGrid Rows="4">
                                 <ToggleButton
-                                    Width="130"
+                                    Width="NaN"
                                     Height="40"
-                                    Margin="10"
+                                    Margin="96,0,96,0"
                                     hc:IconElement.Geometry="{StaticResource WindowsGeometry}"
                                     Effect="{StaticResource EffectShadow4}"
                                     FontSize="14"
-                                    IsChecked="{Binding IsOpen, ElementName=DrawerLeft}">
+                                    IsChecked="{Binding IsOpen, ElementName=DrawerLeft}" HorizontalAlignment="Stretch">
                                     系统设置
                                 </ToggleButton>
                                 <Button
@@ -382,24 +526,17 @@
                             Text="项目总览" />
                     </TabItem.Header>
                     <TreeView
-                        Name="TV"
-                        Margin="5,5,-11,5"
-                        Effect="{StaticResource EffectShadow4}"
-                        ItemsSource="{Binding DamageTree}"
-                        Style="{StaticResource TreeView.Small}">
+                            Name="TV"
+                            Margin="5,5,-11,5"
+                            Effect="{StaticResource EffectShadow4}"
+                            ItemsSource="{Binding DamageTree}"
+                            Style="{StaticResource TreeView.Small}" Height="725" Width="367">
                         <i:Interaction.Triggers>
                             <i:EventTrigger EventName="GotKeyboardFocus">
                                 <i:InvokeCommandAction Command="{Binding LocationImgCommand}" CommandParameter="{Binding SelectedItem.FileName, RelativeSource={RelativeSource AncestorType={x:Type TreeView}}}" />
                             </i:EventTrigger>
                         </i:Interaction.Triggers>
 
-
-                        <!--<TreeView.InputBindings>
-                            <KeyBinding
-                                Key="Right"
-                                Command="{Binding LocationImgCommand}"
-                                CommandParameter="{Binding SelectedItem.FileName, RelativeSource={RelativeSource AncestorType={x:Type TreeView}}}" />
-                        </TreeView.InputBindings>-->
                         <TreeView.ItemContainerStyle>
                             <Style BasedOn="{StaticResource TreeViewItemBaseStyle}" TargetType="TreeViewItem">
                                 <Style.Triggers>
@@ -414,9 +551,9 @@
                                 <TextBlock FontSize="17" Text="{Binding Name}" />
                             </HierarchicalDataTemplate>
                             <HierarchicalDataTemplate
-                                AlternationCount="1000"
-                                DataType="{x:Type md:DamageCategoryTree}"
-                                ItemsSource="{Binding Children}">
+                                    AlternationCount="1000"
+                                    DataType="{x:Type md:DamageCategoryTree}"
+                                    ItemsSource="{Binding Children}">
                                 <Border>
                                     <Border.Style>
                                         <Style BasedOn="{StaticResource BorderTipDanger}" TargetType="Border">
@@ -425,9 +562,6 @@
                                                     <Setter Property="Background" Value="{StaticResource LightSuccessBrush}" />
                                                     <Setter Property="BorderBrush" Value="{StaticResource SuccessBrush}" />
                                                 </DataTrigger>
-                                                <!--<DataTrigger Binding="{Binding ColorBrush}" Value="Condition2">
-                                                    <Setter Property="Style" Value="{StaticResource BorderTipWarning}" />
-                                                </DataTrigger>-->
                                                 <DataTrigger Binding="{Binding ColorBrush}" Value="{x:Static Brushes.YellowGreen}">
                                                     <Setter Property="Background" Value="{StaticResource LightWarningBrush}" />
                                                     <Setter Property="BorderBrush" Value="{StaticResource WarningBrush}" />
@@ -437,57 +571,61 @@
                                     </Border.Style>
                                     <StackPanel Width="210" Orientation="Horizontal">
                                         <TextBlock
-                                            FontSize="{StaticResource SubHeadFontSize}"
-                                            MouseDown="TextBlock_MouseDown"
-                                            Text="{Binding Name}" />
+                                                FontSize="{StaticResource SubHeadFontSize}"
+                                                MouseDown="TextBlock_MouseDown"
+                                                Text="{Binding Name}" />
                                         <TextBlock FontSize="16" Text="{Binding Count, StringFormat='  次数:{0}'}" />
                                     </StackPanel>
                                 </Border>
 
                             </HierarchicalDataTemplate>
                             <DataTemplate DataType="{x:Type md:Details}">
+
                                 <Border
-                                    Margin="5"
-                                    BorderThickness="2"
-                                    CornerRadius="5"
-                                    Effect="{StaticResource EffectShadow4}"
-                                    MouseDown="Border_MouseDown"
-                                    Style="{StaticResource BorderTipPrimary}">
+                 Margin="5"
+                 BorderThickness="2"
+                 CornerRadius="5"
+                 Effect="{StaticResource EffectShadow4}"
+                 MouseDown="Border_MouseDown"
+                 Background="{Binding Background}">
 
-
-                                    <!--<i:Interaction.Triggers>
-                                        <i:EventTrigger EventName="MouseDown">
-                                            <i:InvokeCommandAction Command="{Binding DataContext.LocationImgCommand, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" CommandParameter="{Binding FileName}" />
-                                        </i:EventTrigger>
-                                    </i:Interaction.Triggers>-->
+                                    <!-- 保留样式的基础样式，但不覆盖 Background -->
+                                    <Border.Style>
+                                        <Style TargetType="Border" BasedOn="{StaticResource BorderTipPrimary}">
+                                            <!-- ❌ 不要再在这里设置 Background 否则会覆盖绑定 -->
+                                            <!-- <Setter Property="Background" Value="White" /> -->
+                                        </Style>
+                                    </Border.Style>
 
                                     <WrapPanel Width="200" Orientation="Horizontal">
-                                        <Label HorizontalAlignment="Right" Content="{Binding (ItemsControl.AlternationIndex), RelativeSource={RelativeSource AncestorType=TreeViewItem}, StringFormat='{}{0}', Converter={StaticResource AddOneConverter}}" />
+                                        <Label HorizontalAlignment="Right"
+                         Content="{Binding (ItemsControl.AlternationIndex), 
+                         RelativeSource={RelativeSource AncestorType=TreeViewItem}, 
+                         StringFormat='{}{0}', 
+                         Converter={StaticResource AddOneConverter}}" />
                                         <TextBlock
-                                            x:Name="summaryFileName"
-                                            Width="120"
-                                            Margin="5,0"
-                                            Foreground="Black"
-                                            Text="{Binding FileName, StringFormat='里程号:{0}'}"
-                                            ToolTip="{Binding FileName}" />
+                         x:Name="summaryFileName"
+                         Width="120"
+                         Margin="5,0"
+                         Foreground="Black"
+                         Text="{Binding FileName, StringFormat='里程号:{0}'}"
+                         ToolTip="{Binding FileName}" />
                                         <hc:ElementGroup>
                                             <TextBlock
-                                                Margin="10,0"
-                                                Foreground="Black"
-                                                Text="{Binding Count, StringFormat='次数:{0}'}" />
+                             Margin="10,0"
+                             Foreground="Black"
+                             Text="{Binding Count, StringFormat='次数:{0}'}" />
                                             <TextBlock
-                                                Margin="10,0"
-                                                Foreground="Black"
-                                                Text="{Binding weight, StringFormat='权重:{0}'}"
-                                                Visibility="{Binding weight, Converter={StaticResource Object2VisibilityConverter}}" />
+                             Margin="10,0"
+                             Foreground="Black"
+                             Text="{Binding weight, StringFormat='权重:{0}'}"
+                             Visibility="{Binding weight, Converter={StaticResource Object2VisibilityConverter}}" />
                                         </hc:ElementGroup>
-
                                     </WrapPanel>
                                 </Border>
                             </DataTemplate>
                         </TreeView.Resources>
                     </TreeView>
-
                 </TabItem>
                 <TabItem Height="30" ScrollViewer.VerticalScrollBarVisibility="Visible">
                     <TabItem.Header>
@@ -533,49 +671,104 @@
                     </StackPanel>
                 </TabItem>
             </TabControl>
-            <Border
+            <!-- 第一个部分调整高度和布局 -->
+            <Grid
                 Grid.Row="6"
                 Grid.Column="0"
                 Grid.ColumnSpan="2"
-                Padding="0"
-                BorderBrush="{StaticResource InfoBrush}"
-                BorderThickness="2"
-                CornerRadius="8"
-                Style="{StaticResource BorderTipPrimary}">
+                Margin="0,10,0,0">
                 <UniformGrid
-                    Margin="0,10"
                     Columns="4"
-                    FirstColumn="0">
-                    <StackPanel Margin="10,0" Orientation="Horizontal">
-                        <Label Background="{Binding PortStatusColor}" />
-                        <TextBlock Text="{Binding PortStatusText}" />
+                    VerticalAlignment="Center"
+                    Height="60">
+                    <!-- 设置固定高度 -->
+                    <!-- 原有内容保持不变 -->
+                    <StackPanel 
+                        Margin="10,0" 
+                        Orientation="Horizontal" 
+                        VerticalAlignment="Center"
+                        Background="Transparent">
+                        <Border 
+                            Width="18"
+                            Height="18"
+                            CornerRadius="9"
+                            Margin="0,0,5,0"
+                            BorderThickness="1"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            Background="{Binding PortStatusColor}"
+                            ToolTip="连接状态"
+                            VerticalAlignment="Center">
+                            <Border.Effect>
+                                <DropShadowEffect 
+                                    BlurRadius="8" 
+                                    ShadowDepth="0" 
+                                    Color="#80000000"
+                                    Opacity="0.6"/>
+                            </Border.Effect>
+                        </Border>
+
+                        <!-- 状态文本 -->
+                        <TextBlock 
+                            Text="{Binding PortStatusText}"
+                            FontSize="12"
+                            VerticalAlignment="Center"
+                            Margin="0,0,10,0"
+                            Foreground="{DynamicResource PrimaryTextBrush}"/>
+
+                        <!-- 启动按钮（手动播放图标 ▶） -->
                         <hc:ProgressButton
-                            Width="60"
-                            Height="25"
-                            Margin="5"
-                            Checked="ProgressButton_Checked"
+                            Width="70"
+                            Height="28"
+                            Margin="0,0,5,0"
+                            Padding="0"
                             Command="{Binding StartPythonScriptCommand}"
-                            FontSize="10"
+                            FontSize="12"
+                            FontWeight="SemiBold"
                             IsChecked="{Binding IsStartPython}"
                             Style="{StaticResource ToggleButtonLoadingPrimary}"
-                            Visibility="{Binding StartPythonVisible}">
-                            启动
+                            Visibility="{Binding StartPythonVisible}"
+                            ToolTip="启动探伤分析服务">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Path 
+                                    Data="M 0,0 L 12,6 L 0,12 Z" 
+                                    Fill="{DynamicResource SuccessBrush}"
+                                    Width="12"
+                                    Height="12"
+                                    Margin="0,0,5,0"
+                                    Stretch="Uniform"/>
+                                    <TextBlock 
+                                    Text="启动"
+                                    Foreground="White"
+                                    VerticalAlignment="Center"/>
+                            </StackPanel>
                         </hc:ProgressButton>
+
                         <Button
-                            Width="60"
-                            Height="25"
-                            Margin="5"
+                            Width="70"
+                            Height="28"
+                            Padding="0"
                             Command="{Binding StopPythonScriptCommand}"
-                            FontSize="10"
+                            FontSize="12"
+                            FontWeight="SemiBold"
                             Style="{StaticResource ButtonWarning}"
-                            Visibility="{Binding StopPythonVisible}">
-                            停止
+                            Visibility="{Binding StopPythonVisible}"
+                            ToolTip="停止探伤分析服务">
+                            <StackPanel Orientation="Horizontal">
+                                <Path 
+                                    Data="M 0,0 H 12 V 12 H 0 Z" 
+                                    Fill="	#FFF44336"
+                                    Width="12"
+                                    Height="12"
+                                    Margin="0,0,3,0"
+                                    Stretch="Uniform"/>
+                                    <TextBlock Text="停止"/>
+                            </StackPanel>
                         </Button>
                     </StackPanel>
                     <StackPanel
-                        Grid.ColumnSpan="2"
-                        Orientation="Horizontal"
-                        Visibility="{Binding ProgressVisibility}">
+                            Grid.ColumnSpan="2"
+                            Orientation="Horizontal"
+                            Visibility="{Binding ProgressVisibility}">
                         <TextBlock VerticalAlignment="Center">判伤进度:</TextBlock>
                         <ProgressBar
                             Width="240"
@@ -599,46 +792,59 @@
                     </TextBlock>
                     <TextBlock Text="{Binding Version}" />
                 </UniformGrid>
-            </Border>
-            <StackPanel
+            </Grid>
+
+            <!-- 第二个部分调整高度和宽度 -->
+            <Grid
                 Grid.Row="3"
                 Grid.RowSpan="3"
                 Grid.Column="1"
-                Width="1622"
-                Height="684"
-                Margin="0,79,0,0"
-                HorizontalAlignment="Center"
-                VerticalAlignment="Top"
-                Effect="{StaticResource EffectShadow4}">
-                <Border BorderBrush="{Binding ImgBorderBrush}" BorderThickness="7">
-                    <Viewbox Width="1720" Height="610">
-                        <hc:ImageViewer
-                            Name="img"
+                Margin="0,79,0,0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <!-- 图片区域自适应 -->
+                    <RowDefinition Height="Auto"/>
+                    <!-- 控制按钮区域自动高度 -->
+                </Grid.RowDefinitions>
+
+                <Viewbox 
+                    Grid.Row="0"
+                    Stretch="Uniform"
+                    MaxWidth="1552"
+                    MaxHeight="564">
+                    <Border BorderBrush="{Binding ImgBorderBrush}" BorderThickness="10,10,10,10">
+                        <local:DamageDisplayBox 
+                            x:Name="damageViewer"
                             Width="1920"
                             Height="800"
-                            Margin="0"
-                            Padding="0"
-                            HorizontalAlignment="Left"
-                            VerticalAlignment="Top"
-                            Effect="{StaticResource EffectShadow4}"
-                            ImageSource="{Binding ImgSource}"
-                            IsFullScreen="False"
-                            RenderTransformOrigin="0.773,7.543"
-                            ShowImgMap="True">
+                            SourceImage="{Binding ImgSource}"
+                            MouseWheel="DamageViewer_MouseWheel"
+                            MouseMove="DamageViewer_MouseMove"
+                            MouseLeftButtonDown="DamageViewer_MouseLeftButtonDown"
+                            MouseLeftButtonUp="DamageViewer_MouseLeftButtonUp">
+                            <local:DamageDisplayBox.RenderTransform>
+                                <TransformGroup>
+                                    <ScaleTransform/>
+                                    <TranslateTransform/>
+                                </TransformGroup>
+                            </local:DamageDisplayBox.RenderTransform>
+                            
                             <hc:AdornerElement.Instance>
                                 <hc:Magnifier
-                                    HorizontalOffset="-16"
-                                    Scale="2"
-                                    VerticalOffset="-16" />
+                                            HorizontalOffset="-16"
+                                            Scale="2"
+                                            VerticalOffset="-16"/>
                             </hc:AdornerElement.Instance>
-                        </hc:ImageViewer>
-                    </Viewbox>
+                            </local:DamageDisplayBox>
+                    </Border>
+                </Viewbox>
 
-                </Border>
                 <StackPanel
+                    Grid.Row="1"
                     Width="1400"
                     HorizontalAlignment="Center"
-                    VerticalAlignment="Center"
+                    VerticalAlignment="Bottom"
+                    Margin="0,10,0,0"
                     Orientation="Horizontal">
                     <TextBlock
                         Name="RuleInfo"
@@ -664,21 +870,25 @@
                             显示标记[S]
                         </ToggleButton>
                         <Button Margin="10,10" Command="{Binding StartSnipasteCommand}">探头颜色展示</Button>
-
                         <ToggleButton
-                            Margin="10"
-                            Command="{Binding NoDamageCheckCommand}"
-                            CommandParameter="鼠标点击"
-                            IsEnabled="{Binding IsNoDamageBtnEnabled}"
-                            Style="{StaticResource ToggleButtonSuccess}" Checked="ToggleButton_Checked_1">
+     Margin="10"
+     Command="{Binding NoDamageCheckCommand}"
+     CommandParameter="鼠标点击"
+     IsEnabled="{Binding IsNoDamageBtnEnabled}"
+     Focusable="False"
+     Style="{StaticResource ToggleButtonSuccess}"
+     >
+
                             无伤[O]
                         </ToggleButton>
                         <ToggleButton
-                            Margin="10"
-                            Command="{Binding DamageCheckCommand}"
-                            CommandParameter="鼠标点击"
-                            IsEnabled="{Binding IsDamageBtnEnabled}"
-                            Style="{StaticResource ToggleButtonDanger}">
+     Margin="10"
+     Command="{Binding DamageCheckCommand}"
+     CommandParameter="鼠标点击"
+     IsEnabled="{Binding IsDamageBtnEnabled}"
+     Focusable="False"
+     Style="{StaticResource ToggleButtonDanger}"
+     >
                             疑似[P]
                         </ToggleButton>
                         <TextBlock
@@ -692,9 +902,8 @@
                             Text="{Binding DamageRemark}"
                             TextWrapping="WrapWithOverflow" />
                     </StackPanel>
-
                 </StackPanel>
-            </StackPanel>
+            </Grid>
         </Grid>
     </Border>
 </hc:Window>

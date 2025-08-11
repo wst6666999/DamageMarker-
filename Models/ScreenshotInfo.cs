@@ -25,6 +25,8 @@ namespace DamageMaker.Models
         public string WorkSection { get; set; }
         public string? WorkLength { get; set; }
         public string? SelectedLineType { get; set; }
+
+      
         public string? WorkGroup { get; set; }
         public string? OperatorName { get; set; }
         public string? AnalyzeTime { get; set; }

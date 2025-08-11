@@ -109,6 +109,7 @@ namespace DamageMarker.Views
                     if ((border.Background is SolidColorBrush brush1 && brush1.Color == Colors.Green))
                     {
                         return;
+
                     }
                     border.Focus();
                     // 设置选中项
@@ -280,5 +281,7 @@ namespace DamageMarker.Views
                 _lastMousePosition = currentPosition;
             }
         }
+
+        
     }
 }

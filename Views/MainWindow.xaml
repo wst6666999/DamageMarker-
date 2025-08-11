@@ -582,12 +582,12 @@
                             <DataTemplate DataType="{x:Type md:Details}">
 
                                 <Border
-                 Margin="5"
-                 BorderThickness="2"
-                 CornerRadius="5"
-                 Effect="{StaticResource EffectShadow4}"
-                 MouseDown="Border_MouseDown"
-                 Background="{Binding Background}">
+                                    Margin="5"
+                                    BorderThickness="2"
+                                    CornerRadius="5"
+                                    Effect="{StaticResource EffectShadow4}"
+                                    MouseDown="Border_MouseDown"
+                                    Background="{Binding Background}">
 
                                     <!-- 保留样式的基础样式，但不覆盖 Background -->
                                     <Border.Style>
@@ -666,6 +666,28 @@
                                 </DataGridTemplateColumn>
                                 <!--<DataGridTextColumn Binding="{Binding DamageCategory}"  Header="伤损类别" />-->
                                 <DataGridTextColumn Binding="{Binding Similarity}" Header="相似度" />
+                                <DataGridTemplateColumn>
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal">
+                                                <ToggleButton
+                                                    Margin="2"
+                                                    Focusable="False"
+                                                    Style="{StaticResource ToggleButtonSuccess}"
+                                                    >
+                                                    
+                                                    显示
+                                                </ToggleButton>
+                                                <ToggleButton
+                                                    Margin="2"
+                                                    Focusable="False"
+                                                    Style="{StaticResource ToggleButtonDanger}">
+                                                    隐藏
+                                                </ToggleButton>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
                             </DataGrid.Columns>
                         </DataGrid>
                     </StackPanel>
@@ -871,24 +893,22 @@
                         </ToggleButton>
                         <Button Margin="10,10" Command="{Binding StartSnipasteCommand}">探头颜色展示</Button>
                         <ToggleButton
-     Margin="10"
-     Command="{Binding NoDamageCheckCommand}"
-     CommandParameter="鼠标点击"
-     IsEnabled="{Binding IsNoDamageBtnEnabled}"
-     Focusable="False"
-     Style="{StaticResource ToggleButtonSuccess}"
-     >
-
+                            Margin="10"
+                            Command="{Binding NoDamageCheckCommand}"
+                            CommandParameter="鼠标点击"
+                            IsEnabled="{Binding IsNoDamageBtnEnabled}"
+                            Focusable="False"
+                            Style="{StaticResource ToggleButtonSuccess}">
                             无伤[O]
                         </ToggleButton>
                         <ToggleButton
-     Margin="10"
-     Command="{Binding DamageCheckCommand}"
-     CommandParameter="鼠标点击"
-     IsEnabled="{Binding IsDamageBtnEnabled}"
-     Focusable="False"
-     Style="{StaticResource ToggleButtonDanger}"
-     >
+                            Margin="10"
+                            Command="{Binding DamageCheckCommand}"
+                            CommandParameter="鼠标点击"
+                            IsEnabled="{Binding IsDamageBtnEnabled}"
+                            Focusable="False"
+                            Style="{StaticResource ToggleButtonDanger}"
+                            >
                             疑似[P]
                         </ToggleButton>
                         <TextBlock

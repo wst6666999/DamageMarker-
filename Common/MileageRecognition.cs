@@ -59,7 +59,7 @@ namespace DamageMaker.Common
             uint cropHeight = (uint)(softwareBitmap.PixelHeight * cropX);
             SoftwareBitmap croppedBitmap = await CropSoftwareBitmapAsync(softwareBitmap, 0, (int)(softwareBitmap.PixelHeight - cropHeight), softwareBitmap.PixelWidth, (int)cropHeight);
             var result = await ocr.RecognizeAsync(croppedBitmap);
-            return result.Text.Replace("O", "0").Replace("o", "0").Replace("I", "1").Replace(" ", "");
+            return result.Text.Replace("O", "0").Replace("o", "0").Replace("I", "1").Replace(" ", "").Replace("a","6");
         }
         public static async Task<string> CropAndRecognizeMileage(Bitmap imgBitmap, float cropX)
         {
@@ -80,15 +80,19 @@ namespace DamageMaker.Common
         /// <returns></returns>
         public static async Task<string> CropAndRecognizeMileage(Bitmap imgBitmap, uint height)
         {
+            // 1. 将 System.Drawing.Bitmap 转换为 Windows.Graphics.Imaging.SoftwareBitmap（异步）
             SoftwareBitmap softwareBitmap = await ConvertToSoftwareBitmapAsync(imgBitmap);
+            // 2. 计算裁剪区域高度
             uint cropHeight = height;
+            // 3. 裁剪 SoftwareBitmap 图像，裁剪区域从图像底部开始，高度为 cropHeight
             SoftwareBitmap croppedBitmap = await CropSoftwareBitmapAsync(softwareBitmap, 0, (int)(softwareBitmap.PixelHeight - cropHeight), softwareBitmap.PixelWidth, (int)cropHeight);
 
             //  await SaveDebugImg(croppedBitmap);
-
+            // 4. 使用 OCR 引擎识别裁剪后的图像文字（异步）
             var result = await ocr.RecognizeAsync(croppedBitmap);
 
-            return result.Text.Replace("O", "0").Replace("o", "0").Replace("I", "1").Replace(" ", "");
+            //规范格式
+            return result.Text.Replace("O", "0").Replace("o", "0").Replace("I", "1").Replace(" ", "").Replace("a","6");
         }
         private static async Task SaveDebugImg(SoftwareBitmap img)
         {
@@ -112,8 +116,8 @@ namespace DamageMaker.Common
                     return null;
 
                 // 安全截取子串
-                string kmPart = input.SafeSubstring(plusPos - 4, 4);
-                string mPart = input.SafeSubstring(plusPos + 1, 3);
+                string kmPart = input.SafeSubstring(plusPos - 4, 4);//km前4位，安全截取
+                string mPart = input.SafeSubstring(plusPos + 1, 3);//m前三位，安全截取
 
                 // 验证是否为纯数字
                 if (!IsAllDigits(kmPart) || !IsAllDigits(mPart))
@@ -148,33 +152,28 @@ namespace DamageMaker.Common
             }
         }
 
-        public static string? ExtractVelocity(this string input) //提取速度信息
+        public static string? ExtractVelocity(this string input, string AppName)
         {
-            if (string.IsNullOrEmpty(input) || input.Length < 8) // 最小长度检查
-                return null;
+            if (string.IsNullOrWhiteSpace(input))
+                return string.Empty;
 
-            int endIndex = input.Length - 1;
-            while (endIndex >= 0 && !char.IsDigit(input[endIndex]))
+            var matches = Regex.Matches(input, @"(\d\.\d)(?=kmph)", RegexOptions.IgnoreCase);
+            var results = new List<string>();
+
+            foreach (Match match in matches)
             {
-                endIndex--;
+                if (match.Success)
+                    results.Add(match.Groups[1].Value);
             }
 
-            if (endIndex < 0)
-                return null; // 没有数字
-
-            int startIndex = endIndex;
-            while (startIndex >= 0 && input[startIndex] != ' ')
-            {
-                startIndex--;
-            }
-
-            // 提取这段子串
-            string candidate = input.Substring(startIndex + 1, endIndex - startIndex);
-
-            // 用正则提取浮点数（允许一个）
-            Match match = Regex.Match(candidate, @"\d+(\.\d+)?");
-            return match.Success ? match.Value : null;
+            // 用逗号连接所有速度，返回字符串
+            return string.Join(",", results);
         }
+
+
+
+
+
 
         // 辅助方法：安全子串截取
         private static string SafeSubstring(this string str, int start, int length)

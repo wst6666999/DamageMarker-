@@ -82,6 +82,7 @@ namespace DamageMaker.Models
         [ObservableProperty]
         private Brush background = Brushes.White;
 
+
     }
 
    

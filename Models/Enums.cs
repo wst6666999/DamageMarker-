@@ -53,7 +53,8 @@ namespace DamageMaker.Models
         核伤4_非母材 = 44,
         岔心_非母材 = 45,
         厂焊=46,
-        铝热焊=47
+        铝热焊=47,
+        超速=48
     }
     public enum MoveDirection
     {

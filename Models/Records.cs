@@ -12,7 +12,7 @@ namespace DamageMaker.Models
 {
     public class Records
     {
-        public record OcrData(string ImgFullPath, string MileageText);
+        public record OcrData(string ImgFullPath, string MileageText,string speedvalue);
         public record DamageCategoryRecord(int Id, string CategoryName, SolidColorBrush CategoryColor,string? Remark,bool IsRule);
         public static List<DamageCategoryRecord> DamageCategoryData = new()
         {
@@ -64,6 +64,7 @@ namespace DamageMaker.Models
             new (39, "接头出波不全", Brushes.YellowGreen, null, false),
             new (46, "厂焊",Brushes.YellowGreen,null,false),
             new (47, "铝热焊",Brushes.YellowGreen,null,false),
+            new (48, "超速",Brushes.YellowGreen,null,false),
         };
 
     }

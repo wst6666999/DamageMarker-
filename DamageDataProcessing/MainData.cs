@@ -10,22 +10,28 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Windows.Storage;
+using static DamageMaker.Models.Records;
 
 namespace DamageMaker.DamageDataProcessing
 {
     internal  class MainData
     {
-      public  List<DamageData>? DamageDataList;
-      public  ScreenshotInfo? NeedSavedInfo;
-       public int AllImgCount;
-       public string ImgFolderName; //文件夹名称
+        public List<OcrData>? OcrDataList;
+        public  List<DamageData>? DamageDataList;
+        public  ScreenshotInfo? NeedSavedInfo;
+        public int AllImgCount;
+        public string ImgFolderName; //文件夹名称
         public string[] ImgPaths;
         public long FolderId;
         internal MainData(string DataPath)
         {
+            
             ImgFolderName = Path.GetFileName(DataPath);
+            OcrDataList = AboutJson.LoadOcrDatas(DataPath);
+
             (DamageDataList, NeedSavedInfo) = AboutJson.JsonPathToData(DataPath);
-         ImgPaths=Directory.GetFiles(DataPath, "*.png")
+            
+            ImgPaths=Directory.GetFiles(DataPath, "*.png")
                         .OrderBy(File.GetCreationTime)
                         .ToArray();
             AllImgCount = ImgPaths.Length;

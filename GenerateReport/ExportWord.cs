@@ -119,13 +119,16 @@ namespace DamageMaker.GenerateReport
             };
             document.ReplaceText(ElapsedTimeForAnalyze);
 
-            var OperatorName = new StringReplaceTextOptions()
+            var para = document.Paragraphs.FirstOrDefault(p => p.Text.Contains("张三"));
+            if (para != null)
             {
-                NewValue = NeedSavedInfo?.RailWayInfo.OperatorName ?? " 合肥平行线机器人",
-                SearchValue = "张三"
-            };
+                // 替换“张三”为“合肥平行线机器人”（或RailWayInfo.OperatorName）
+                string newOperatorName = NeedSavedInfo?.RailWayInfo.OperatorName ?? "合肥平行线机器人";
+                para.ReplaceText("张三", newOperatorName);
 
-            document.ReplaceText(OperatorName);
+                // 设置段落右对齐
+                para.Alignment = Alignment.right;
+            }
 
             //替换报告时间
             string searchDate = "2025/5/28";
@@ -188,7 +191,7 @@ namespace DamageMaker.GenerateReport
                 int height = imgF.Height;
                 var img = document.AddImage(imgPath);
                 var picture = img.CreatePicture(height * 0.2f, width * 0.2f);
-                document.Paragraphs.LastOrDefault().AppendLine("第" + ++count + "张图").FontSize(10).Alignment = Alignment.left;
+                document.Paragraphs.LastOrDefault().AppendLine("第" + ++count + "张图").AppendLine().FontSize(10).Alignment = Alignment.left;
                 var p=document.Paragraphs.LastOrDefault().AppendPicture(picture).AppendLine("");
                 p.Append(Info.Remark).FontSize(10).AppendLine().Alignment=Alignment.center;
                 p.AppendLine();

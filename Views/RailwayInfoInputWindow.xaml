@@ -98,7 +98,7 @@
                             hc:TitleElement.Title="作业日期："
                             FontSize="{StaticResource SubHeadFontSize}"
                             SelectedDate="{Binding WorkDate, Converter={StaticResource WorkDateToStringConverter}}" />
-
+                        
                         <!--  作业区间需要在历史记录显现  -->
                         <hc:TextBox
                             hc:InfoElement.Necessary="True"
@@ -106,13 +106,14 @@
                             hc:InfoElement.Title="作业区间："
                             FontSize="{StaticResource SubHeadFontSize}"
                             Text="{Binding WorkSection}" />
-
                         <hc:TextBox
                             hc:TitleElement.Title="作业长度："
                             FontSize="{StaticResource SubHeadFontSize}"
                             Text="{Binding WorkLength}" />
                     </StackPanel>
                 </hc:Card>
+
+                
 
                 <!--  线路信息  -->
                 <hc:Card Style="{StaticResource InputCard}">

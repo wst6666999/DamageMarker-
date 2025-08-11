@@ -147,6 +147,7 @@ namespace DamageMarker.ViewModels
         private bool isEnableThumbnail;
 
         public List<DamageData>? DamageDataList; //json探伤数据序列化后
+        public List<OcrData>? OcrDataList;
         private Dispatcher dispatcher = Dispatcher.CurrentDispatcher;
         public static event Action<object, EventArgs>? ScreenShotPopuped;
         static readonly HttpClient client = new HttpClient();
@@ -205,7 +206,7 @@ namespace DamageMarker.ViewModels
         public MainWindowViewModel()
         {
             Version = "V0.82";
-            AppTitle = " 探伤仪检测数据智能分析系统";
+            AppTitle = "探伤仪检测数据智能分析系统";
             SelectedIndex = -1;
             //ScreenshotOffset = DamageMaker.Properties.Settings.Default.ScreenshotOffset;
             //ScreenshotInterval = DamageMaker.Properties.Settings.Default.ScreenshotInterval;
@@ -438,6 +439,7 @@ namespace DamageMarker.ViewModels
             ImgBorderBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(211, 211, 211));
             Parameter = SelectedPath;
             var mainData = new MainData(SelectedPath);
+            OcrDataList = mainData.OcrDataList;
 
             ImgFolderName = mainData.ImgFolderName;
             imgFiles = mainData.ImgPaths;
@@ -647,45 +649,138 @@ namespace DamageMarker.ViewModels
         /// <param name="Imgfiles"></param>
         /// <param name="SavePath"></param>
         /// <returns></returns>
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="Imgfiles"></param>
+        /// <param name="SavePath"></param>
+        /// <returns></returns>
         async Task SaveAllBoxSelectedImg(List<string> Imgfiles, [NotNull] string SavePath)
         {
-
             int saveImgCount = 0;
-            await Task.Run(delegate
+            Directory.CreateDirectory(SavePath);
+            bool hideFishScale = Settings.Default.IsConcealFishScale;
+
+            // 先让 UI 线程生成所有 BitmapFrame（避免并行时跨线程问题）
+            var renderResults = await Application.Current.Dispatcher.Invoke(async () =>
             {
-                Parallel.ForEach((IEnumerable<string>)Imgfiles, (Action<string>)delegate (string imgFile)
+                var results = new List<(string FilePath, BitmapFrame Frame)>();
+                foreach (var imgFile in Imgfiles)
                 {
+                    if (!File.Exists(imgFile)) continue;
                     string fileName = Path.GetFileName(imgFile);
                     string fileNamePath = Path.Combine(SavePath, fileName);
+                    if (File.Exists(fileNamePath)) continue;
 
-                    if (!File.Exists(fileNamePath))
+                    var frame = ProcessImage(imgFile, hideFishScale);
+                    frame.Freeze(); // 关键：冻结 BitmapFrame，使其可跨线程访问
+                    results.Add((fileNamePath, frame));
+                }
+                return results;
+            });
+
+            // 并行保存（不涉及 UI 操作）
+            await Task.Run(() =>
+            {
+                Parallel.ForEach(renderResults, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, item =>
+                {
+                    try
                     {
-                        BitmapFrame boxSelectedImg = BitmapFrame.Create(new Uri(imgFile));
-                        float[][] item = GetDamagePointsAndIndex(imgFile).Item1;
-                        //if (isHideNormal)
-                        //{
-                        //    item = MaskDamge(item);
-                        //}
-                        //后续查清楚item在那里为空,为什么,必须解决
-                        //if (item?.Length != 0)
-                        //{
-
-                        BitmapFrame image = BoxSelected(boxSelectedImg, item);
-
-                        SaveBitmapToPng(Path.Combine(SavePath, fileName), image);
-
-                        saveImgCount++;
-                        //  }
+                        SaveBitmapToPng(item.FilePath, item.Frame);
+                        Interlocked.Increment(ref saveImgCount);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"保存图片 {item.FilePath} 时出错: {ex}");
                     }
                 });
             });
 
-            Console.WriteLine($"图片伤损绘制{saveImgCount}张完成,");
+            Console.WriteLine($"图片伤损绘制{saveImgCount}张完成");
         }
 
-      
-       
-       
+        // 提取图片处理方法，可在多线程中调用
+        private BitmapFrame ProcessImage(string imgFile, bool hideFishScale)
+        {
+            var damageDisplay = new DamageDisplayBox();
+
+            // 加载图片
+            BitmapFrame sourceImage = BitmapFrame.Create(new Uri(imgFile));
+            if (sourceImage.Width <= 0 || sourceImage.Height <= 0)
+            {
+                throw new InvalidOperationException($"图片 {imgFile} 尺寸无效");
+            }
+
+            // 设置控件属性
+            damageDisplay.SourceImage = sourceImage;
+            var damageData = GetDamagePointsAndIndex(imgFile);
+            damageDisplay.DamagePoints = damageData.Item1;
+            damageDisplay.ShowGuidelines = false;
+            damageDisplay.HideFishScale = hideFishScale;
+
+            // 布局更新
+            damageDisplay.Measure(new System.Windows.Size(sourceImage.Width, sourceImage.Height));
+            damageDisplay.Arrange(new Rect(0, 0, sourceImage.Width, sourceImage.Height));
+            damageDisplay.UpdateLayout();
+
+            if (damageDisplay.ActualWidth <= 0 || damageDisplay.ActualHeight <= 0)
+            {
+                throw new InvalidOperationException($"控件尺寸无效");
+            }
+
+            var renderTarget = new RenderTargetBitmap(
+                (int)damageDisplay.ActualWidth,
+                (int)damageDisplay.ActualHeight,
+                96, 96, PixelFormats.Pbgra32);
+            renderTarget.Render(damageDisplay);
+
+            return BitmapFrame.Create(renderTarget);
+        }
+
+
+        public async Task SaveSingleOverviewImage(string imgFile, string savePath)
+        {
+            if (string.IsNullOrWhiteSpace(imgFile) || !File.Exists(imgFile))
+            {
+                Console.WriteLine("图片路径无效或文件不存在。");
+                return;
+            }
+
+            // 创建 Overview 子目录
+            string overviewFolder = Path.Combine(savePath, "Overview");
+            Directory.CreateDirectory(overviewFolder);
+
+            bool hideFishScale = Settings.Default.IsConcealFishScale;
+
+            // UI线程执行渲染
+            var frame = await Application.Current.Dispatcher.InvokeAsync(() =>
+            {
+                var processed = ProcessImage(imgFile, hideFishScale);
+                processed.Freeze();
+                return processed;
+            });
+
+            // 构造保存路径（保持原文件名）
+            string fileName = Path.GetFileNameWithoutExtension(imgFile) + "_overview.png";
+            string saveFilePath = Path.Combine(overviewFolder, fileName);
+
+            // 后台线程保存图片
+            await Task.Run(() =>
+            {
+                try
+                {
+                    SaveBitmapToPng(saveFilePath, frame);
+                    
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"保存 Overview 图像失败: {ex}");
+                }
+            });
+        }
+
+
+
         #region
         [ObservableProperty]
         bool isHideNormalMarker;
@@ -1062,144 +1157,6 @@ namespace DamageMarker.ViewModels
 
         }
 
-        private BitmapFrame BoxSelected(BitmapFrame boxSelectedImg, float[][] damagePoints)
-        {
-            try
-            {
-                int index = 0;
-                // 获取Image控件中的源图片
-                BitmapSource originalBitmap = (BitmapSource)boxSelectedImg;
-                // 创建一个新的位图来存储绘制后的结果
-                WriteableBitmap writableBitmap = new WriteableBitmap(originalBitmap);
-                // 使用DrawingVisual来绘制
-                DrawingVisual drawingVisual = new DrawingVisual();
-
-                var drawingContext = drawingVisual.RenderOpen();
-                // 将原图绘制到底层
-                drawingContext.DrawImage(
-                    writableBitmap,
-                    new Rect(0, 0, writableBitmap.PixelWidth, writableBitmap.PixelHeight)
-                );
-                if (NeedSavedInfo != null && isDistinctDamage)
-                {
-                    // 绘制两条红色的竖虚线
-                    Pen dashedPen = new Pen(Brushes.Red, 2)
-                    {
-                        DashStyle = new DashStyle(new double[] { 2, 2 }, 0)
-                    };
-                    var RightLineX = MainWindowViewModel.NeedSavedInfo.ScreenshotWidthPx - MainWindowViewModel.NeedSavedInfo.ScreenshotOffset / 2;
-                    var LeftLineX = MainWindowViewModel.NeedSavedInfo.ScreenshotOffset / 2;
-                    drawingContext.DrawLine(dashedPen, new Point(LeftLineX, 0), new Point(LeftLineX, writableBitmap.PixelHeight));
-                    drawingContext.DrawLine(dashedPen, new Point(RightLineX, 0), new Point(RightLineX, writableBitmap.PixelHeight));
-                }
-
-                foreach (var damagePoint in damagePoints)
-                {
-                    if ((damagePoint[4]==36|| damagePoint[4] == 23)&&Settings.Default.IsConcealFishScale)
-                    {
-                        continue;
-                    }
-
-
-                    float x = damagePoint[0],
-                          y = damagePoint[1],
-                          width = damagePoint[2];
-                    float height = damagePoint[3],
-                          Similar = damagePoint[5] < 0.5 ? 0.5f : damagePoint[5];
-                    SolidColorBrush color = DamageIdToBrush(damagePoint[4]);
-                    string DamageCategory = DamageIdToDamageName(damagePoint[4]);
-                    var boxBrush = new SolidColorBrush(
-                        System.Windows.Media.Color.FromArgb(
-                            Convert.ToByte(255 * Similar),
-                            color.Color.R,
-                            color.Color.G,
-                            color.Color.B
-                        )
-                    );
-                    if (x > writableBitmap.Width || x < 0 || y > writableBitmap.Height || y < 0 || x + width > writableBitmap.Width || y + height > writableBitmap.Height)
-                    {
-                        Console.WriteLine($"绘制图片{boxSelectedImg.Decoder.Frames.FirstOrDefault()}出错,");
-                        Console.WriteLine($"第{index}个伤损超出范围,");
-                        continue;
-                    }
-
-                    //防止画的框的宽度和高度过小
-                    if (width > 5 && height > 5)
-                    {
-                        // 绘制一个框
-                        drawingContext.DrawRoundedRectangle(
-                            Brushes.Transparent,
-                            new Pen(boxBrush, 5),
-                            new Rect(x, y, width, height),
-                            width / 2 * (1 - Similar),
-                            height / 2 * (1 - Similar)
-                        );
-                    }
-                    else
-                    {
-                        drawingContext.DrawRoundedRectangle(
-                           Brushes.Transparent,
-                           new Pen(boxBrush, 1),
-                           new Rect(x, y, width, height),
-                           width / 2 * (1 - Similar),
-                           height / 2 * (1 - Similar)
-                       );
-                    }
-                    drawingContext.DrawText(
-                        new FormattedText(
-                            DamageCategory + $" {index}",
-                            CultureInfo.GetCultureInfo("zh-CN"),
-                            System.Windows.FlowDirection.LeftToRight,
-                            new Typeface("微软雅黑"),
-                            12,
-                            System.Windows.Media.Brushes.White,
-                            96
-                        ),
-                        new System.Windows.Point(
-                            x - 30 <= 0 ? x + 30 : x - 30,
-                            y - 30 <= 0 ? y + 30 : y - 30
-                        )
-                    );
-                    index++;
-                }
-
-
-
-
-
-                drawingContext.Close();
-                // 将DrawingVisual的内容转换为BitmapSource
-                RenderTargetBitmap rtb = new RenderTargetBitmap(
-                    (int)writableBitmap.PixelWidth,
-                    (int)writableBitmap.PixelHeight,
-                    96,
-                    96,
-                    PixelFormats.Pbgra32
-                );
-                rtb.Render(drawingVisual);
-
-                // 将结果转换为BitmapImage以显示
-                BitmapImage bitmapImage = new BitmapImage();
-                using (MemoryStream memoryStream = new MemoryStream())
-                {
-                    PngBitmapEncoder encoder = new PngBitmapEncoder();
-                    encoder.Frames.Add(BitmapFrame.Create(rtb));
-                    encoder.Save(memoryStream);
-                    memoryStream.Seek(0, SeekOrigin.Begin);
-                    bitmapImage.BeginInit();
-                    bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
-                    bitmapImage.StreamSource = memoryStream;
-                    bitmapImage.EndInit();
-                }
-                return BitmapFrame.Create((BitmapSource)bitmapImage);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"绘制图片时发生异常: {ex.Message}");
-                return null;
-            }
-        }
-
         [RelayCommand]
         void ProcessStart(string exePath)
         {
@@ -1411,21 +1368,49 @@ namespace DamageMarker.ViewModels
         {
             var result = new List<Details>();
 
+            // 处理超速（类别48）的特殊逻辑
+            if (CategoryIndex == 48)
+            {
+                // 从OCR数据中提取超速记录
+                if (OcrDataList != null)
+                {
+                    foreach (var ocr in OcrDataList)
+                    {
+                        if (!string.IsNullOrWhiteSpace(ocr.speedvalue))
+                        {
+                            var speeds = ocr.speedvalue.Split(',');
+                            foreach (var speedStr in speeds)
+                            {
+                                if (float.TryParse(speedStr, out float speed) && speed > 1f)
+                                {
+                                    result.Add(new Details()
+                                    {
+                                        FileName = Path.GetFileName(ocr.ImgFullPath), // OCR关联的图片
+                                        Count = 1,
+                                        weight = speed // 用速度值作为权重（可选）
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
+                return result;
+            }
+
+            // 处理普通伤损类别（非48）
             foreach (DamageData damageData in damageDataListPara)
             {
                 Details tempDetails = new();
                 int count = 0;
-                List<float> wights = new();
+                List<float> weights = new();
+
                 for (int i = 0; i < damageData.DamagePoint.GetLength(0); i++)
                 {
                     if (damageData.DamagePoint[i][4] == CategoryIndex)
                     {
-                        if (IsSortBySimilarity)//根据不同类型来进行排序
+                        if (IsSortBySimilarity)
                         {
-
-
-                            wights.Add(damageData.DamagePoint[i][5]);
-
+                            weights.Add(damageData.DamagePoint[i][5]);
                         }
                         count++;
                         tempDetails = new Details()
@@ -1434,14 +1419,12 @@ namespace DamageMarker.ViewModels
                             Count = count
                         };
                     }
-                    if (
-                        i == damageData.DamagePoint.GetLength(0) - 1
-                        && tempDetails.FileName != null
-                    )
+
+                    if (i == damageData.DamagePoint.GetLength(0) - 1 && tempDetails.FileName != null)
                     {
                         if (IsSortBySimilarity)
                         {
-                            tempDetails.weight = wights.Count > 0 ? wights.Max() : 0;
+                            tempDetails.weight = weights.Count > 0 ? weights.Max() : 0;
                         }
                         result.Add(tempDetails);
                     }
@@ -1449,7 +1432,6 @@ namespace DamageMarker.ViewModels
             }
             return result;
         }
-
         [RelayCommand]
         void LocationImg(string Fpath)
         {
@@ -1466,9 +1448,218 @@ namespace DamageMarker.ViewModels
         {
             InitCategorySummary();
         }
-        private void InitCategorySummary(int DisplayedRulesCount=10)
-        {
+        //private void InitCategorySummary(int DisplayedRulesCount=10)
+        //{
 
+        //    // 正确做法：统一数据源
+        //    var testTrackFiles = DamageDataList
+        //        .Select(data => Path.GetFileName(data.Url.Split('?')[0]))
+        //        .Intersect(ThumbnailImgInfos
+        //            .Where(img => img.IsTestTrack)
+        //            .Select(img => Path.GetFileName(img.Path.Split('?')[0]))
+        //        .ToHashSet());
+
+        //    // 正确过滤非测试轨数据
+        //    var nonTestTrackDatas = DamageDataList
+        //        .Where(data => !testTrackFiles.Contains(Path.GetFileName(data.Url.Split('?')[0])))
+        //        .ToList();
+
+        //    // 4. 使用过滤后的数据进行后续处理
+        //    var categoryAndCount = ObtainInfo.GetCategoryAndCount(nonTestTrackDatas);
+
+        //    var 标记Sum = CalculateSum(categoryAndCount, 14, 15, 16, 17, 18, 19, 39, 46, 47);
+        //    var 焊缝Sum = CalculateSum(categoryAndCount, 2, 11, 22);
+        //    var 轨头Sum = CalculateSum(categoryAndCount, 5, 6, 36, 13);
+        //    var 核伤Sum = CalculateSum(categoryAndCount, 5, 6);
+        //    var 轨腰Sum = CalculateSum(categoryAndCount, 7, 9, 29);
+        //    var 轨底Sum = CalculateSum(categoryAndCount, 37, 8);
+        //    var 作业违规Sum = CalculateSum(categoryAndCount, 21, 39, 48);
+
+        //    List<DamageCategorySummaryTree> RootCategoryList = new List<DamageCategorySummaryTree>();
+        //    RootCategoryList.Add(new DamageCategorySummaryTree() { Name = "正常标记", Children = new() });
+        //    RootCategoryList.Add(new DamageCategorySummaryTree() { Name = "伤损标记", Children = new() });
+        //    RootCategoryList.Add(new DamageCategorySummaryTree() { Name = $"作业标记 总次数{标记Sum}", Children = new() });
+
+        //    // 2. 测试轨节点（核心修改：添加子项）
+        //    RootCategoryList.Add(new DamageCategorySummaryTree()
+        //    {
+        //        Name = $"测试轨 (前{_activeBeforeShield}后{_activeAfterShield})",
+        //        Children = new List<ITreeNode>()
+        //{
+        //    // 屏蔽前测试轨子项
+        //    new DamageCategoryTree()
+        //    {
+        //        Name = "屏蔽前测试轨",
+        //        Count = _activeBeforeShield,
+        //        ColorBrush = Brushes.Gray,
+        //        // 绑定前屏蔽测试轨的详情列表（通过GetTestTrackItems获取）
+        //        Children = GetTestTrackItems("Before")
+        //    },
+        //    // 屏蔽后测试轨子项
+        //    new DamageCategoryTree()
+        //    {
+        //        Name = "屏蔽后测试轨",
+        //        Count = _activeAfterShield,
+        //        ColorBrush = Brushes.Gray,
+        //        // 绑定后屏蔽测试轨的详情列表
+        //        Children = GetTestTrackItems("After")
+        //    }
+        //}
+        //    });
+
+        //    // 正常类里面细分
+        //    RootCategoryList[0].Children.Add(new DamageCategorySummaryTree()
+        //    {
+        //        Name = $"焊缝 总次数{焊缝Sum}",
+        //        Children = new()
+        //    });
+
+
+
+
+
+
+        //        RootCategoryList[1].Children.Add(new DamageCategorySummaryTree()
+        //        {
+        //            Name = $"轨头 总次数{轨头Sum}",
+        //            Children = new()
+        //    {
+        //        new DamageCategorySummaryTree()
+        //        {
+        //            Name = $"核伤 总次数{核伤Sum}",
+        //            Children = new()
+        //        },
+        //    }
+        //        });
+        //        RootCategoryList[1].Children.Add(new DamageCategorySummaryTree()
+        //        {
+        //            Name = $"轨腰 总次数{轨腰Sum}",
+        //            Children = new()
+        //        });
+        //        RootCategoryList[1].Children.Add(new DamageCategorySummaryTree()
+        //        {
+        //            Name = $"轨底 总次数{轨底Sum}",
+        //            Children = new()
+        //        });
+
+
+        //    RootCategoryList[2].Children.Add(new DamageCategorySummaryTree()
+        //    {
+        //        Name = $"作业违规 总次数{作业违规Sum}",
+        //        Children = new()
+        //    });
+
+        //    var 轨头Category = (RootCategoryList[1].Children[0] as DamageCategorySummaryTree)?.Children;
+        //    var 轨腰Category = (RootCategoryList[1].Children[1] as DamageCategorySummaryTree)?.Children;
+        //    var 轨底Category = (RootCategoryList[1].Children[2] as DamageCategorySummaryTree)?.Children;
+
+
+
+        //    foreach (var x in categoryAndCount)
+        //    {
+        //        if (DamageIdToBrush(x.Value) == Brushes.Green)
+        //        {
+        //            if (x.Value == 2 || x.Value == 11 || x.Value == 22)
+        //            {
+        //                (RootCategoryList[0].Children[0] as DamageCategorySummaryTree)
+        //                    ?.Children.Add(new DamageCategoryTree()
+        //                    {
+        //                        Name = $"{DamageIdToDamageName(x.Value)}",
+        //                        Count = x.Key,
+        //                        ColorBrush = Brushes.Green,
+        //                        Children = GetCategorySummary(x.Value, nonTestTrackDatas)
+        //                        .OrderByDescending(x => x.Count).ToList()
+        //                    });
+        //            }
+        //            else
+        //            {
+        //                RootCategoryList[0].Children.Add(new DamageCategoryTree()
+        //                {
+        //                    Name = $"{DamageIdToDamageName(x.Value)}",
+        //                    Count = x.Key,
+        //                    ColorBrush = Brushes.Green,
+        //                    Children = GetCategorySummary(x.Value, nonTestTrackDatas)
+        //                .OrderByDescending(x => x.Count).ToList()
+        //                });
+        //            }
+        //        }
+        //        else if (DamageIdToBrush(x.Value) == Brushes.Red)
+        //        {
+
+
+        //                if (x.Value == 5 || x.Value == 6)
+        //                {
+        //                    (轨头Category?[0] as DamageCategorySummaryTree)?.Children.Add(new DamageCategoryTree()
+        //                    {
+        //                        Name = $"{DamageIdToDamageName(x.Value)}",
+        //                        Count = x.Key,
+        //                        Children = GetCategorySummary(x.Value, nonTestTrackDatas, true)
+        //                        .OrderByDescending(x => x.weight).ToList()
+        //                    });
+        //                }
+        //                else if (x.Value == 36 || x.Value == 13)
+        //                {
+        //                    轨头Category.Add(new DamageCategoryTree()
+        //                    {
+        //                        Name = $"{DamageIdToDamageName(x.Value)}",
+        //                        Count = x.Key,
+        //                        Children = GetCategorySummary(x.Value, nonTestTrackDatas, true)
+        //                        .OrderByDescending(x => x.weight).ToList()
+        //                    });
+        //                }
+        //                else if (x.Value == 9 || x.Value == 7||x.Value==29)
+        //                {
+        //                    轨腰Category.Add(new DamageCategoryTree()
+        //                    {
+        //                        Name = $"{DamageIdToDamageName(x.Value)}",
+        //                        Count = x.Key,
+        //                        Children = GetCategorySummary(x.Value, nonTestTrackDatas, true)
+        //                        .OrderByDescending(x => x.weight).ToList()
+        //                    });
+        //                }
+        //                else if (x.Value == 37 || x.Value == 8)
+        //                {
+        //                    轨底Category.Add(new DamageCategoryTree()
+        //                    {
+        //                        Name = $"{DamageIdToDamageName(x.Value)}",
+        //                        Count = x.Key,
+        //                        Children = GetCategorySummary(x.Value, nonTestTrackDatas, true)
+        //                        .OrderByDescending(x => x.weight).ToList()
+        //                    });
+        //                }
+
+        //        }
+        //        else if (DamageIdToBrush(x.Value) == Brushes.YellowGreen)
+        //        {
+        //            if (x.Value == 21 || x.Value == 39 || x.Value == 48)
+        //            {
+        //                (RootCategoryList[2].Children[0] as DamageCategorySummaryTree).Children.Add(new DamageCategoryTree()
+        //                {
+        //                    Name = $"{DamageIdToDamageName(x.Value)}",
+        //                    Count = x.Key,
+        //                    ColorBrush = Brushes.YellowGreen,
+        //                    Children = GetCategorySummary(x.Value, nonTestTrackDatas)
+        //                                      .OrderByDescending(x => x.Count).ToList()
+        //                });
+        //            }
+        //            else
+        //            {
+        //                RootCategoryList[2].Children.Add(new DamageCategoryTree()
+        //                {
+        //                    Name = $"{DamageIdToDamageName(x.Value)}",
+        //                    Count = x.Key,
+        //                    ColorBrush = Brushes.YellowGreen,
+        //                    Children = GetCategorySummary(x.Value, nonTestTrackDatas)
+        //                                      .OrderByDescending(x => x.Count).ToList()
+        //                });
+        //            }
+        //        }
+        //    }
+        //    DamageTree = RootCategoryList;
+        //}
+
+        private void InitCategorySummary(int DisplayedRulesCount = 10)
+        {
             // 正确做法：统一数据源
             var testTrackFiles = DamageDataList
                 .Select(data => Path.GetFileName(data.Url.Split('?')[0]))
@@ -1483,43 +1674,39 @@ namespace DamageMarker.ViewModels
                 .ToList();
 
             // 4. 使用过滤后的数据进行后续处理
-            var categoryAndCount = ObtainInfo.GetCategoryAndCount(nonTestTrackDatas);
+            var categoryAndCount = ObtainInfo.GetCategoryAndCount(nonTestTrackDatas, false, OcrDataList); // 传入OCR数据
 
             var 标记Sum = CalculateSum(categoryAndCount, 14, 15, 16, 17, 18, 19, 39, 46, 47);
             var 焊缝Sum = CalculateSum(categoryAndCount, 2, 11, 22);
             var 轨头Sum = CalculateSum(categoryAndCount, 5, 6, 36, 13);
             var 核伤Sum = CalculateSum(categoryAndCount, 5, 6);
-            var 轨腰Sum = CalculateSum(categoryAndCount, 7, 9,29);
+            var 轨腰Sum = CalculateSum(categoryAndCount, 7, 9, 29);
             var 轨底Sum = CalculateSum(categoryAndCount, 37, 8);
-            var 作业违规Sum = CalculateSum(categoryAndCount, 21, 39);
+            var 作业违规Sum = CalculateSum(categoryAndCount, 21, 39, 48)    ; // 48是超速类别
 
             List<DamageCategorySummaryTree> RootCategoryList = new List<DamageCategorySummaryTree>();
             RootCategoryList.Add(new DamageCategorySummaryTree() { Name = "正常标记", Children = new() });
             RootCategoryList.Add(new DamageCategorySummaryTree() { Name = "伤损标记", Children = new() });
             RootCategoryList.Add(new DamageCategorySummaryTree() { Name = $"作业标记 总次数{标记Sum}", Children = new() });
 
-            // 2. 测试轨节点（核心修改：添加子项）
+            // 测试轨节点
             RootCategoryList.Add(new DamageCategorySummaryTree()
             {
                 Name = $"测试轨 (前{_activeBeforeShield}后{_activeAfterShield})",
                 Children = new List<ITreeNode>()
         {
-            // 屏蔽前测试轨子项
             new DamageCategoryTree()
             {
                 Name = "屏蔽前测试轨",
                 Count = _activeBeforeShield,
                 ColorBrush = Brushes.Gray,
-                // 绑定前屏蔽测试轨的详情列表（通过GetTestTrackItems获取）
                 Children = GetTestTrackItems("Before")
             },
-            // 屏蔽后测试轨子项
             new DamageCategoryTree()
             {
                 Name = "屏蔽后测试轨",
                 Count = _activeAfterShield,
                 ColorBrush = Brushes.Gray,
-                // 绑定后屏蔽测试轨的详情列表
                 Children = GetTestTrackItems("After")
             }
         }
@@ -1532,35 +1719,30 @@ namespace DamageMarker.ViewModels
                 Children = new()
             });
 
-           
-
-           
-
-           
-                RootCategoryList[1].Children.Add(new DamageCategorySummaryTree()
-                {
-                    Name = $"轨头 总次数{轨头Sum}",
-                    Children = new()
+            RootCategoryList[1].Children.Add(new DamageCategorySummaryTree()
             {
-                new DamageCategorySummaryTree()
-                {
-                    Name = $"核伤 总次数{核伤Sum}",
-                    Children = new()
-                },
-            }
-                });
-                RootCategoryList[1].Children.Add(new DamageCategorySummaryTree()
-                {
-                    Name = $"轨腰 总次数{轨腰Sum}",
-                    Children = new()
-                });
-                RootCategoryList[1].Children.Add(new DamageCategorySummaryTree()
-                {
-                    Name = $"轨底 总次数{轨底Sum}",
-                    Children = new()
-                });
-            
+                Name = $"轨头 总次数{轨头Sum}",
+                Children = new()
+     {
+         new DamageCategorySummaryTree()
+         {
+             Name = $"核伤 总次数{核伤Sum}",
+             Children = new()
+         },
+     }
+            });
+            RootCategoryList[1].Children.Add(new DamageCategorySummaryTree()
+            {
+                Name = $"轨腰 总次数{轨腰Sum}",
+                Children = new()
+            });
+            RootCategoryList[1].Children.Add(new DamageCategorySummaryTree()
+            {
+                Name = $"轨底 总次数{轨底Sum}",
+                Children = new()
+            });
 
+            // 作业违规分类
             RootCategoryList[2].Children.Add(new DamageCategorySummaryTree()
             {
                 Name = $"作业违规 总次数{作业违规Sum}",
@@ -1571,10 +1753,10 @@ namespace DamageMarker.ViewModels
             var 轨腰Category = (RootCategoryList[1].Children[1] as DamageCategorySummaryTree)?.Children;
             var 轨底Category = (RootCategoryList[1].Children[2] as DamageCategorySummaryTree)?.Children;
 
-
-
             foreach (var x in categoryAndCount)
             {
+                var summaryList = GetCategorySummary(x.Value, nonTestTrackDatas);
+                int imageCount = summaryList.Count;
                 if (DamageIdToBrush(x.Value) == Brushes.Green)
                 {
                     if (x.Value == 2 || x.Value == 11 || x.Value == 22)
@@ -1583,7 +1765,7 @@ namespace DamageMarker.ViewModels
                             ?.Children.Add(new DamageCategoryTree()
                             {
                                 Name = $"{DamageIdToDamageName(x.Value)}",
-                                Count = x.Key,
+                                Count = imageCount,
                                 ColorBrush = Brushes.Green,
                                 Children = GetCategorySummary(x.Value, nonTestTrackDatas)
                                 .OrderByDescending(x => x.Count).ToList()
@@ -1594,67 +1776,64 @@ namespace DamageMarker.ViewModels
                         RootCategoryList[0].Children.Add(new DamageCategoryTree()
                         {
                             Name = $"{DamageIdToDamageName(x.Value)}",
-                            Count = x.Key,
+                            Count = imageCount,
                             ColorBrush = Brushes.Green,
                             Children = GetCategorySummary(x.Value, nonTestTrackDatas)
-                        .OrderByDescending(x => x.Count).ToList()
+                            .OrderByDescending(x => x.Count).ToList()
                         });
                     }
                 }
                 else if (DamageIdToBrush(x.Value) == Brushes.Red)
                 {
-                   
-                   
-                        if (x.Value == 5 || x.Value == 6)
+                    if (x.Value == 5 || x.Value == 6)
+                    {
+                        (轨头Category?[0] as DamageCategorySummaryTree)?.Children.Add(new DamageCategoryTree()
                         {
-                            (轨头Category?[0] as DamageCategorySummaryTree)?.Children.Add(new DamageCategoryTree()
-                            {
-                                Name = $"{DamageIdToDamageName(x.Value)}",
-                                Count = x.Key,
-                                Children = GetCategorySummary(x.Value, nonTestTrackDatas, true)
-                                .OrderByDescending(x => x.weight).ToList()
-                            });
-                        }
-                        else if (x.Value == 36 || x.Value == 13)
+                            Name = $"{DamageIdToDamageName(x.Value)}",
+                            Count = imageCount,
+                            Children = GetCategorySummary(x.Value, nonTestTrackDatas, true)
+                            .OrderByDescending(x => x.weight).ToList()
+                        });
+                    }
+                    else if (x.Value == 36 || x.Value == 13)
+                    {
+                        轨头Category.Add(new DamageCategoryTree()
                         {
-                            轨头Category.Add(new DamageCategoryTree()
-                            {
-                                Name = $"{DamageIdToDamageName(x.Value)}",
-                                Count = x.Key,
-                                Children = GetCategorySummary(x.Value, nonTestTrackDatas, true)
-                                .OrderByDescending(x => x.weight).ToList()
-                            });
-                        }
-                        else if (x.Value == 9 || x.Value == 7||x.Value==29)
+                            Name = $"{DamageIdToDamageName(x.Value)}",
+                            Count = imageCount,
+                            Children = GetCategorySummary(x.Value, nonTestTrackDatas, true)
+                            .OrderByDescending(x => x.weight).ToList()
+                        });
+                    }
+                    else if (x.Value == 9 || x.Value == 7 || x.Value == 29)
+                    {
+                        轨腰Category.Add(new DamageCategoryTree()
                         {
-                            轨腰Category.Add(new DamageCategoryTree()
-                            {
-                                Name = $"{DamageIdToDamageName(x.Value)}",
-                                Count = x.Key,
-                                Children = GetCategorySummary(x.Value, nonTestTrackDatas, true)
-                                .OrderByDescending(x => x.weight).ToList()
-                            });
-                        }
-                        else if (x.Value == 37 || x.Value == 8)
+                            Name = $"{DamageIdToDamageName(x.Value)}",
+                            Count = imageCount,
+                            Children = GetCategorySummary(x.Value, nonTestTrackDatas, true)
+                            .OrderByDescending(x => x.weight).ToList()
+                        });
+                    }
+                    else if (x.Value == 37 || x.Value == 8)
+                    {
+                        轨底Category.Add(new DamageCategoryTree()
                         {
-                            轨底Category.Add(new DamageCategoryTree()
-                            {
-                                Name = $"{DamageIdToDamageName(x.Value)}",
-                                Count = x.Key,
-                                Children = GetCategorySummary(x.Value, nonTestTrackDatas, true)
-                                .OrderByDescending(x => x.weight).ToList()
-                            });
-                        }
-                    
+                            Name = $"{DamageIdToDamageName(x.Value)}",
+                            Count = imageCount,
+                            Children = GetCategorySummary(x.Value, nonTestTrackDatas, true)
+                            .OrderByDescending(x => x.weight).ToList()
+                        });
+                    }
                 }
                 else if (DamageIdToBrush(x.Value) == Brushes.YellowGreen)
                 {
-                    if (x.Value == 21 || x.Value == 39)
+                    if (x.Value == 21 || x.Value == 39 || x.Value == 48) // 48是超速类别
                     {
                         (RootCategoryList[2].Children[0] as DamageCategorySummaryTree).Children.Add(new DamageCategoryTree()
                         {
                             Name = $"{DamageIdToDamageName(x.Value)}",
-                            Count = x.Key,
+                            Count = imageCount,
                             ColorBrush = Brushes.YellowGreen,
                             Children = GetCategorySummary(x.Value, nonTestTrackDatas)
                                               .OrderByDescending(x => x.Count).ToList()
@@ -1665,7 +1844,7 @@ namespace DamageMarker.ViewModels
                         RootCategoryList[2].Children.Add(new DamageCategoryTree()
                         {
                             Name = $"{DamageIdToDamageName(x.Value)}",
-                            Count = x.Key,
+                            Count = imageCount,
                             ColorBrush = Brushes.YellowGreen,
                             Children = GetCategorySummary(x.Value, nonTestTrackDatas)
                                               .OrderByDescending(x => x.Count).ToList()
@@ -1675,6 +1854,7 @@ namespace DamageMarker.ViewModels
             }
             DamageTree = RootCategoryList;
         }
+
         private int CalculateSum(IEnumerable<KeyValuePair<int, float>> categoryAndCount, params int[] values)
         {
             return categoryAndCount
@@ -1825,8 +2005,8 @@ namespace DamageMarker.ViewModels
         [ObservableProperty]
         string searchMileageText;
 
-        ObservableCollection<OcrData> locationMileageImgs = new ObservableCollection<OcrData>();
-        public ObservableCollection<OcrData> LocationMileageImgs { get => locationMileageImgs; set => locationMileageImgs = value; }
+        ObservableCollection<Records.OcrData> locationMileageImgs = new ObservableCollection<Records.OcrData>();
+        public ObservableCollection<Records.OcrData> LocationMileageImgs { get => locationMileageImgs; set => locationMileageImgs = value; }
 
         [RelayCommand]
         private void SearchMileage(string mileage)
@@ -1855,7 +2035,7 @@ namespace DamageMarker.ViewModels
                 string mileageFilePath = Path.Combine(Parameter, "OcrResult.json");
                 List<Records.OcrData> ocrData = AboutJson.DeserializeJson<List<Records.OcrData>>(mileageFilePath);
                 List<Records.OcrData> resutl = ocrData.Where((Records.OcrData x) => x.MileageText.Contains(km) && x.MileageText.Contains(i)).ToList();
-                LocationMileageImgs = new ObservableCollection<Records.OcrData>(resutl.Select((Records.OcrData x) => new Records.OcrData(Path.GetFileName(x.ImgFullPath), x.MileageText)));
+                LocationMileageImgs = new ObservableCollection<Records.OcrData>(resutl.Select((Records.OcrData x) => new Records.OcrData(Path.GetFileName(x.ImgFullPath), x.MileageText,x.speedvalue)));
                 if (LocationMileageImgs.Count != 0)
                 {
                     SelectMileageWindow win = new SelectMileageWindow();
@@ -2047,17 +2227,15 @@ namespace DamageMarker.ViewModels
             {
                 if (value == damageRemark) return; // 无变化则跳过
                 SetProperty(ref damageRemark, value);
-                // 仅在非空时更新数据库
-                if (!string.IsNullOrEmpty(value) || HasDamageImg || HasNoDamageImg)
-                {
+
                     DataAccess.UpdateImageRemark(SqlImgInfos, ImgPath, value);
-                }
+                
             }
         }
 
 
-        
-        
+
+
 
         [ObservableProperty]
         bool hasNoDamageImg;
@@ -2079,15 +2257,32 @@ namespace DamageMarker.ViewModels
             get => isDamageBtnEnabled;
             set => SetProperty(ref isDamageBtnEnabled, value);
         }
-        private Details _selectedDetail;
-        
+
         bool CanNoDamageCheck() => ImgSource != null;
         bool CanDamageCheck() => ImgSource != null;
 
         [RelayCommand(CanExecute = nameof(CanNoDamageCheck))]
-        void NoDamageCheck()//判断当前图片是否有伤损，一次点击为无伤损，二次点击取消
+        void NoDamageCheck()
         {
-            int? IsConfirmDamage = GetIsConfirmDamage();
+            Console.WriteLine("NoDamageCheck called");
+            int? isconfirmDamage = GetIsConfirmDamage();
+            Console.WriteLine($"当前图片的isconfirmDamage值为：{isconfirmDamage}");
+
+            if (isconfirmDamage == 1)
+            {
+                HasDamageImg = true;
+                HasNoDamageImg = false;
+            }
+            else if (isconfirmDamage == 0)
+            {
+                HasDamageImg = false;
+                HasNoDamageImg = true;
+            }
+            else
+            {
+                HasDamageImg = false;
+                HasNoDamageImg = false;
+            }
 
             if (HasNoDamageImg)
             {
@@ -2096,66 +2291,82 @@ namespace DamageMarker.ViewModels
                 ResetState();
                 UpdateConfirmDamageAndRemark(null, "");
                 IsDamageBtnEnabled = true;
-                Background = Brushes.Yellow;
-            }        
-            else 
+                
+            }
+            else
             {
                 // 选择无伤
                 HasNoDamageImg = true;
                 HasDamageImg = false;
-               
+
                 var r = GetRemark();
                 string remarkToSet = string.IsNullOrWhiteSpace(r) ? "无伤" : r;
                 UpdateConfirmDamageAndRemark(false, remarkToSet);
-                Background = Brushes.LightGreen;
+
                 DamageRemark = remarkToSet;
                 IsReadRemarkOnly = false;
-                ImgBorderBrush = Brushes.Green;
+                ImgBorderBrush = Brushes.LightGreen;
                 IsDamageBtnEnabled = false;
             }
-            
+
             NoDamageCheckCommand.NotifyCanExecuteChanged();
             DamageCheckCommand.NotifyCanExecuteChanged();
 
-           
+            
         }
 
         [RelayCommand(CanExecute = nameof(CanDamageCheck))]
-        void DamageCheck()//判断当前图片是否有伤损，一次点击为有伤损，二次点击取消
+        void DamageCheck()
         {
-            
+
+            int? isconfirmDamage = GetIsConfirmDamage();
+            if (isconfirmDamage == 1)
+            {
+                HasDamageImg = true;
+                HasNoDamageImg = false;
+            }
+            else if (isconfirmDamage == 0)
+            {
+                HasDamageImg = false;
+                HasNoDamageImg = true;
+            }
+            else
+            {
+                HasDamageImg = false;
+                HasNoDamageImg = false;
+            }
+
             if (HasDamageImg)
             {
                 // 二次点击：取消选择
                 HasDamageImg = false;
                 ResetState();
                 UpdateConfirmDamageAndRemark(null, "");
-                Background = Brushes.Yellow;
+                
                 IsNoDamageBtnEnabled = true; // 解锁无伤按钮
-               
             }
-            else 
+            else
             {
                 // 选择有伤
                 HasDamageImg = true;
                 HasNoDamageImg = false;
-               
+
                 var r = GetRemark();
                 string remarkToSet = string.IsNullOrWhiteSpace(r) ? "疑似有伤" : r;
                 UpdateConfirmDamageAndRemark(true, remarkToSet);
 
                 DamageRemark = remarkToSet;
-              IsReadRemarkOnly = false;
+                IsReadRemarkOnly = false;
                 ImgBorderBrush = Brushes.OrangeRed;
                 IsNoDamageBtnEnabled = false; // 锁定无伤按钮
-                Background = Brushes.OrangeRed;
+                
             }
-           
+
             //先通过当前点击图片是否有伤标记
 
 
             // 首先判定改图片是否无伤标记
-          
+
 
             NoDamageCheckCommand.NotifyCanExecuteChanged();
             DamageCheckCommand.NotifyCanExecuteChanged();
@@ -2177,7 +2388,6 @@ namespace DamageMarker.ViewModels
                 ?.Remark;
         }
 
-        //更新数据库中某张图片的“是否确认伤损状态”和备注信息
         void UpdateConfirmDamageAndRemark(bool? isConfirmDamage, string? remark)
         {
             var target = SqlImgInfos
@@ -2205,24 +2415,74 @@ namespace DamageMarker.ViewModels
 
         int? GetIsConfirmDamage()
         {
-            bool? IsConfirmDamage = SqlImgInfos
-               .FirstOrDefault(x => Path.GetFileName(x.ImgPath) == Path.GetFileName(ImgPath))
-               ?.IsConfirmDamage;
-
-            if (IsConfirmDamage == null)
+            var target = SqlImgInfos
+                    .FirstOrDefault(x => Path.GetFileName(x.ImgPath) == Path.GetFileName(ImgPath));
+            if (target == null || string.IsNullOrWhiteSpace(ImgPath))
             {
-                return null; // 如果没有找到对应的记录，返回 null
+                return null; // 如果没有找到目标或ImgPath为空，返回null
             }
-            else if (IsConfirmDamage == true)
+
+            using var sqlHelper = new SQLHelper(Settings.Default.SqlPath);
+            int? isconfirmdamage = sqlHelper.GetIsConfirmDamage(target.ImgId);
+            return isconfirmdamage;
+
+        }
+        partial void OnImgSourceChanged(ImageSource? value)
+        {
+            var fileName = Path.GetFileName(ImgPath);
+            var info = SqlImgInfos.FirstOrDefault(x => Path.GetFileName(x.ImgPath) == fileName);
+
+            if (info != null)
             {
-                return 1; // 有伤
+                if (info.IsConfirmDamage == true) // 疑似有伤
+                {
+                    HasDamageImg = true;
+                    HasNoDamageImg = false;
+
+                    DamageRemark = string.IsNullOrWhiteSpace(info.Remark) ? "疑似有伤" : info.Remark;
+                    ImgBorderBrush = Brushes.OrangeRed;
+                    IsReadRemarkOnly = false;
+
+                    IsNoDamageBtnEnabled = false;
+                    IsDamageBtnEnabled = true;
+                }
+                else if (info.IsConfirmDamage == false) // 无伤
+                {
+                    HasNoDamageImg = true;
+                    HasDamageImg = false;
+
+                    DamageRemark = string.IsNullOrWhiteSpace(info.Remark) ? "无伤" : info.Remark;
+                    ImgBorderBrush = Brushes.LightGreen;
+                    IsReadRemarkOnly = false;
+
+                    IsDamageBtnEnabled = false;
+                    IsNoDamageBtnEnabled = true;
+                }
+                else // null，未标记
+                {
+                    HasDamageImg = false;
+                    HasNoDamageImg = false;
+                    ResetState();
+
+                    IsNoDamageBtnEnabled = true;
+                    IsDamageBtnEnabled = true;
+                }
             }
             else
             {
-                return 0; // 无伤
+                // 如果数据库中没有记录，视作未标记
+                HasDamageImg = false;
+                HasNoDamageImg = false;
+                ResetState();
+
+                IsNoDamageBtnEnabled = true;
+                IsDamageBtnEnabled = true;
             }
+
+            NoDamageCheckCommand.NotifyCanExecuteChanged();
+            DamageCheckCommand.NotifyCanExecuteChanged();
         }
-       
+
         #endregion
 
 

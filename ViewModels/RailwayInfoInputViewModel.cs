@@ -32,6 +32,7 @@ namespace DamageMaker.ViewModels
         string workSection;
         [ObservableProperty]
         string ?workLength;
+     
         [ObservableProperty]
          string ?selectedLineType;
         [ObservableProperty]

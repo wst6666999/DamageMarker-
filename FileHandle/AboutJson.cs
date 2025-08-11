@@ -48,6 +48,7 @@ namespace DamageMaker.FileHandle
                 var SString = Path.Combine(JsonPath, "info.json");
                 //调用DesserializeJson方法将 JSON 字符串反序列化为对象,并返回;(此方法已经在AboutJSon类中封装好了)
                 var DamgeDatas = AboutJson.DeserializeJson<List<DamageData>>(DString);
+                
                 var DamgeShots = AboutJson.DeserializeJson<ScreenshotInfo>(SString);
                 //var hasThermiteWeld47 = DamgeDatas.Any(d => d.DamagePoint?.Any(p => p.Length > 4 && p[4] == 47) ?? false);
                 //Console.WriteLine($"原始数据中是否存在铝热焊47: {hasThermiteWeld47}");
@@ -63,7 +64,34 @@ namespace DamageMaker.FileHandle
             }
         }
 
+        public static List<Records.OcrData> LoadOcrDatas(string JsonPath)
+        {
+            try
+            {
+                var ocrPath = Path.Combine(JsonPath, "OcrResult.json");
 
+                if (!File.Exists(ocrPath))
+                {
+                    Console.WriteLine("OCR 文件不存在：" + ocrPath);
+                    return new List<Records.OcrData>();
+                }
+
+                var ocrDatas = DeserializeJson<List<Records.OcrData>>(ocrPath);
+
+                if (ocrDatas == null)
+                {
+                    Console.WriteLine("OCR 数据反序列化失败");
+                    return new List<Records.OcrData>();
+                }
+
+                return ocrDatas;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"读取 OCR 数据时出错：{ex.Message}");
+                return new List<Records.OcrData>();
+            }
+        }
 
 
 

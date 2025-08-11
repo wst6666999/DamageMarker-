@@ -237,12 +237,16 @@ namespace DamageMarker.Views
 
         async void Playback(int direction, int ScreenshotOffset)
         {
+            //设置截图方向和宽度
+            //重启计时器
+            //发出截图开始事件
             PlaybackDirection = direction > 0 ? MoveDirection.Right : MoveDirection.Left;
-            //MoveRepeatPx = (int)(temporaryWidth - (temporaryWidth / 2 + temporaryWidth * screenshotOfferset * 0.01));
             ImgWidthPx = (int)temporaryWidth;
-            //截图开始计时
             stopwatch.Restart();
             ScreenshotStart?.Invoke(this, EventArgs.Empty);
+
+            //避免重复进入截图逻辑
+
             if (PlaybackingYN) return;
             PlaybackingYN = true;
 
@@ -250,15 +254,15 @@ namespace DamageMarker.Views
             Bitmap? temporaryBitmap2 = null;
             int temporarySameNum = 0;
             filePathIn = MainWindowViewModel.FilePathIn;
-            int count = 0; 
+            int count = 0;
 
-            
+
             //聚焦到应用
-           
-            
+
+
             //使用Flaui 获取聚焦应用名
-            
-            PlaybackedAppName= AppInfo.GetFocusedApplicationName();
+            //判断当前判断当前截图程序，如6m，gt_20等
+            PlaybackedAppName = AppInfo.GetFocusedApplicationName();
             await Task.Delay (1000);
             if (PlaybackedAppName.Contains("JGT-6M"))
             {
@@ -281,14 +285,19 @@ namespace DamageMarker.Views
             //}
 
 
-
+            //如果 PlaybackStopYN 是 true，持续截图，直到重复6次以上。
             while (PlaybackStopYN)
                 {
+
+
+                    //将前一帧图像保存为temporaryBitmap2，方便后续进行对比
                     if (temporaryBitmap1 != null)
                     {
                         temporaryBitmap2 = DeepCloneEx(temporaryBitmap1);
                     }
 
+
+                    //主线程同步调用 CaptureCurrentScreen()，采集当前画面，更新 temporaryBitmap1。
                     this.Dispatcher.Invoke(DispatcherPriority.Normal, (ThreadStart)delegate ()
                     {
                         Growl.ClearGlobal();
@@ -330,10 +339,15 @@ namespace DamageMarker.Views
                                 Console.WriteLine($"图片偏移量:{MovePx}");
                             }
 
+                            
 
 
-                            var Mileagedata = await MileageRecognition.CropAndRecognizeMileage(temporaryBitmap1, 45);
+                        //裁剪区域，进行ocr识别
+                        var Mileagedata = await MileageRecognition.CropAndRecognizeMileage(temporaryBitmap1, 45);
+                            //里程输出
                             var mileage = Mileagedata.ExtractDistance(PlaybackedAppName);
+
+                            var speedvalue = Mileagedata.ExtractVelocity(PlaybackedAppName);
                             string imgFullPath;
                             if (string.IsNullOrEmpty(mileage))
                             {
@@ -348,7 +362,7 @@ namespace DamageMarker.Views
                         //Console.WriteLine(imgFullPath);
                         Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] 截图 #{count}: {imgFullPath}");
                         temporaryBitmap1.Save(imgFullPath, System.Drawing.Imaging.ImageFormat.Png);
-                            OcrDataList.Add(new OcrData(imgFullPath, Mileagedata));
+                            OcrDataList.Add(new OcrData(imgFullPath, Mileagedata,speedvalue));
                         }
                         else
                         {
@@ -370,6 +384,7 @@ namespace DamageMarker.Views
                     {
                         var Mileagedata = await MileageRecognition.CropAndRecognizeMileage(temporaryBitmap1, 45);
                         var mileage = Mileagedata.ExtractDistance(PlaybackedAppName);
+                        var speedvalue = Mileagedata.ExtractVelocity(PlaybackedAppName);
                         string imgFullPath;
                         if (string.IsNullOrEmpty(mileage))
                         {
@@ -377,12 +392,12 @@ namespace DamageMarker.Views
                         }
                         else
                         {
-                            imgFullPath = filePathIn + $@"\{mileage} _{count++}.png";
+                            imgFullPath = filePathIn + $@"\{mileage}_{count++}.png";
                         }
                     //Console.WriteLine("imgFullPath");
                     Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] 截图 #{count}: {imgFullPath}");
                     temporaryBitmap1.Save(imgFullPath, System.Drawing.Imaging.ImageFormat.Png);
-                        OcrDataList.Add(new OcrData(imgFullPath, Mileagedata));
+                        OcrDataList.Add(new OcrData(imgFullPath, Mileagedata,speedvalue));
                     }
 
                     Mouse.MovePixelsPerMillisecond = Settings.Default.MouseMovePixel;

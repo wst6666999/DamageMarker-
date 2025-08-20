@@ -12,7 +12,7 @@ namespace DamageMaker.Properties {
     
     
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "17.14.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "17.12.0.0")]
     internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
         
         private static Settings defaultInstance = ((Settings)(global::System.Configuration.ApplicationSettingsBase.Synchronized(new Settings())));
@@ -70,7 +70,7 @@ namespace DamageMaker.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE")]
+        [global::System.Configuration.DefaultSettingValueAttribute("C:\\Users\\PPXYG\\AppData\\Local\\Kingsoft\\WPS Office\\ksolaunch.exe")]
         public string OfficeLocation {
             get {
                 return ((string)(this["OfficeLocation"]));
@@ -79,7 +79,7 @@ namespace DamageMaker.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("D:\\Snipaste-2.9.1-Beta-x64\\Snipaste.exe")]
+        [global::System.Configuration.DefaultSettingValueAttribute("D:\\DamagerMarker\\DM0.9\\Snipaste-2.9.1-Beta-x64\\Snipaste.exe")]
         public string Snipaste {
             get {
                 return ((string)(this["Snipaste"]));
@@ -214,6 +214,18 @@ namespace DamageMaker.Properties {
         public global::System.Collections.Specialized.StringCollection AppLocation {
             get {
                 return ((global::System.Collections.Specialized.StringCollection)(this["AppLocation"]));
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool IsHideNormalMarker {
+            get {
+                return ((bool)(this["IsHideNormalMarker"]));
+            }
+            set {
+                this["IsHideNormalMarker"] = value;
             }
         }
     }

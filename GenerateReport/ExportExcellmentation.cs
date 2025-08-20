@@ -24,7 +24,7 @@ namespace DamageMaker.GenerateReport
         public ExportExcellmentation()
         {
             //构造函数，初始化ExcelTemplatePath
-                ExcelTemplatePath = @".\Resources\excel模板SH.xlsx";
+                ExcelTemplatePath = @".\Resources\上海表格.xlsx";
 
         }
 

@@ -176,8 +176,9 @@
                         <hc:Divider Content="过滤重复数据" />
                         <CheckBox Width="18" IsChecked="{Binding IsDistinctDamage}" />
                     </StackPanel>
+                    
                     <StackPanel>
-                        <hc:Divider Content="隐藏鱼鳞伤(更改选项后重新打开文件夹生效)" />
+                        <hc:Divider Content="隐藏鱼鳞伤" />
                         <CheckBox Width="18" IsChecked="{Binding IsConcealFishScale}">
                             <i:Interaction.Triggers>
                                 <i:EventTrigger EventName="Click">
@@ -256,6 +257,7 @@
                         CommandParameter="True"/>
                 </StackPanel>
             </TabItem>
+            
         </TabControl>
     </StackPanel>
 </UserControl>

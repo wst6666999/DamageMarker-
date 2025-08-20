@@ -50,7 +50,7 @@
                 <Rectangle
                     x:Name="MileageBorder"
                     Grid.Row="1"
-                    Height="45"
+                    Height="60"
                     VerticalAlignment="Bottom"
                     Fill="Transparent"
                     Stroke="Blue"

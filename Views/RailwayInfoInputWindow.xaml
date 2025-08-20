@@ -69,7 +69,7 @@
                             hc:TitleElement.Title="仪器类型："
                             FontSize="{StaticResource SubHeadFontSize}"
                             IsEditable="True"
-                            Text="{Binding Instruments}">
+                            Text="{Binding Instruments}" SelectionChanged="ComboBox_SelectionChanged">
                             <ComboBoxItem Content="8C" />
                             <ComboBoxItem Content="6M" />
                             <ComboBoxItem Content="8D" />

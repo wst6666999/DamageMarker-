@@ -55,14 +55,11 @@ namespace DamageMaker.Models
         public string Name { get; set; }
         public int? Id { get; set; }
 
-        [ObservableProperty]
-        private string fileName;
+        public string FileName { get; set; }
 
-        [ObservableProperty]
-        private int count;
+        public int Count { get; set; }
 
-        
-        public float? weight;
+        public float? weight { get; set; }
 
         [ObservableProperty]
         private SolidColorBrush colorBrush = Brushes.Transparent;
@@ -85,6 +82,6 @@ namespace DamageMaker.Models
 
     }
 
-   
+
 
 }

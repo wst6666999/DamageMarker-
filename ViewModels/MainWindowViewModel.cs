@@ -246,6 +246,16 @@ namespace DamageMarker.ViewModels
                 _activeAfterShield = msg.AfterCount;
                 ApplyShieldingToImages();
             });
+
+            WeakReferenceMessenger.Default.Register<ConcealFishScaleMessage>(this, (_, msg) =>
+            {
+                Settings.Default.IsConcealFishScale = msg.IsConcealFishScale;
+                ApplyConcealFishScale();
+            });
+        }
+        private async void ApplyConcealFishScale()
+        {
+            await SaveAllBoxSelectedImg(DamageImgPaths, damageImgFolderName);
         }
 
         private int _activeBeforeShield;
@@ -643,12 +653,14 @@ namespace DamageMarker.ViewModels
         }
 
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="Imgfiles"></param>
-        /// <param name="SavePath"></param>
-        /// <returns></returns>
+        [ObservableProperty]
+        private Visibility imgProgressVisibility = Visibility.Collapsed;
+
+        [ObservableProperty]
+        private int _currentImgProgress;
+
+        [ObservableProperty]
+        private int _totalImgProgress;
         /// <summary>
         /// 
         /// </summary>
@@ -661,23 +673,49 @@ namespace DamageMarker.ViewModels
             Directory.CreateDirectory(SavePath);
             bool hideFishScale = Settings.Default.IsConcealFishScale;
 
-            // 先让 UI 线程生成所有 BitmapFrame（避免并行时跨线程问题）
-            var renderResults = await Application.Current.Dispatcher.Invoke(async () =>
+            var renderResults = new List<(string FilePath, BitmapFrame Frame)>();
+            // 先过滤出需要处理的文件
+            var filesToProcess = Imgfiles
+                //.Where(imgFile => File.Exists(imgFile))
+                //.Where(imgFile => !File.Exists(Path.Combine(SavePath, Path.GetFileName(imgFile))))
+                .ToList();
+            //首先初始化进度
+            // Initialize progress
+            await Application.Current.Dispatcher.InvokeAsync(() =>
             {
-                var results = new List<(string FilePath, BitmapFrame Frame)>();
-                foreach (var imgFile in Imgfiles)
-                {
-                    if (!File.Exists(imgFile)) continue;
-                    string fileName = Path.GetFileName(imgFile);
-                    string fileNamePath = Path.Combine(SavePath, fileName);
-                    if (File.Exists(fileNamePath)) continue;
-
-                    var frame = ProcessImage(imgFile, hideFishScale);
-                    frame.Freeze(); // 关键：冻结 BitmapFrame，使其可跨线程访问
-                    results.Add((fileNamePath, frame));
-                }
-                return results;
+                ImgProgressVisibility = Visibility.Visible;
+                CurrentImgProgress = 0;
+                TotalImgProgress = filesToProcess.Count;
             });
+
+            // 分批次处理，每批处理N个文件后允许UI响应
+            int batchSize = 5; // 根据实际情况调整
+            for (int i = 0; i < filesToProcess.Count; i += batchSize)
+            {
+                var batch = filesToProcess.Skip(i).Take(batchSize);
+
+                await Application.Current.Dispatcher.Invoke(() =>
+                {
+                    foreach (var imgFile in batch)
+                    {
+                        string fileName = Path.GetFileName(imgFile);
+                        string fileNamePath = Path.Combine(SavePath, fileName);
+
+                        var frame = ProcessImage(imgFile, hideFishScale);
+                        frame.Freeze();
+                        renderResults.Add((fileNamePath, frame));
+                    }
+
+                    return Task.CompletedTask;
+                });
+                // Update progress
+                await Application.Current.Dispatcher.InvokeAsync(() =>
+                {
+                    CurrentImgProgress = Math.Min(i + batchSize, filesToProcess.Count);
+                });
+                // 允许UI处理消息
+                await Task.Delay(1);
+            }
 
             // 并行保存（不涉及 UI 操作）
             await Task.Run(() =>
@@ -695,39 +733,39 @@ namespace DamageMarker.ViewModels
                     }
                 });
             });
-
+            // Hide progress when done
+            await Application.Current.Dispatcher.InvokeAsync(() =>
+            {
+                ImgProgressVisibility = Visibility.Collapsed;
+            });
             Console.WriteLine($"图片伤损绘制{saveImgCount}张完成");
         }
-
         // 提取图片处理方法，可在多线程中调用
         private BitmapFrame ProcessImage(string imgFile, bool hideFishScale)
         {
-            var damageDisplay = new DamageDisplayBox();
-
-            // 加载图片
+            // 1. 加载图片（非 UI 操作，但 BitmapFrame.Create 需要 STA）
             BitmapFrame sourceImage = BitmapFrame.Create(new Uri(imgFile));
             if (sourceImage.Width <= 0 || sourceImage.Height <= 0)
-            {
                 throw new InvalidOperationException($"图片 {imgFile} 尺寸无效");
-            }
 
-            // 设置控件属性
+            // 2. 创建并配置 DamageDisplayBox（必须在 UI 线程）
+            var damageDisplay = new DamageDisplayBox();
+            var damageData = GetDamagePointsAndIndex(imgFile); // 确保这是线程安全的
+
             damageDisplay.SourceImage = sourceImage;
-            var damageData = GetDamagePointsAndIndex(imgFile);
             damageDisplay.DamagePoints = damageData.Item1;
             damageDisplay.ShowGuidelines = false;
             damageDisplay.HideFishScale = hideFishScale;
 
-            // 布局更新
+            // 3. 测量和布局（必须在 UI 线程）
             damageDisplay.Measure(new System.Windows.Size(sourceImage.Width, sourceImage.Height));
             damageDisplay.Arrange(new Rect(0, 0, sourceImage.Width, sourceImage.Height));
             damageDisplay.UpdateLayout();
 
             if (damageDisplay.ActualWidth <= 0 || damageDisplay.ActualHeight <= 0)
-            {
-                throw new InvalidOperationException($"控件尺寸无效");
-            }
+                throw new InvalidOperationException("控件尺寸无效");
 
+            // 4. 渲染（必须在 UI 线程）
             var renderTarget = new RenderTargetBitmap(
                 (int)damageDisplay.ActualWidth,
                 (int)damageDisplay.ActualHeight,
@@ -788,10 +826,25 @@ namespace DamageMarker.ViewModels
         bool CanHideNormalMarker() => damagePoints != null;
         [RelayCommand(CanExecute = nameof(CanHideNormalMarker))]
 
-        void HideNormalMarker()
+        async void HideNormalMarker()
         {
-            DetailsList.Clear();
-            InitDamageDetails(this.damagePoints);
+            Settings.Default.IsHideNormalMarker = IsHideNormalMarker;
+            Console.WriteLine("隐藏正常标记:" + IsHideNormalMarker);
+
+            //显示加载状态
+            ImgProgressVisibility=Visibility.Visible;
+            CurrentImgProgress = 0;
+            TotalImgProgress = DamageImgPaths.Count;
+
+            await SaveAllBoxSelectedImg(DamageImgPaths, damageImgFolderName);
+            await UpdataThumbnail();
+            ImgProgressVisibility = Visibility.Collapsed;
+
+            if (ThumbnailImgInfos.Count > 0)
+            {
+                SelectedIndex = 0;
+                ImgSelectionChanged();
+            }
         }
 
         private void InitDamageDetails([NotNull] float[][] damagePoints)
@@ -953,19 +1006,21 @@ namespace DamageMarker.ViewModels
         async Task<string> GetJsonFile(string url, string rpath, string wpath)
         {
             var curInstruments = MainWindowViewModel.NeedSavedInfo?.RailWayInfo.Instruments;
-            if (curInstruments == "8C" || curInstruments == "6M" || curInstruments == "8D" || curInstruments == "19型" || curInstruments == "gt-20")
+            if (curInstruments == "8C" || curInstruments == "8D" || curInstruments == "19型" || curInstruments == "gt-20" || curInstruments == "6M")
+                //更改为单轨的模型
                 railClass = "single";
             else if (curInstruments == "双轨501" || curInstruments == "双轨502")
+                //更改为双轨的模型
                 railClass = "double";
-
-            var content = new FormUrlEncodedContent(
-                new[]
-                {
+           
+                var content = new FormUrlEncodedContent(
+                    new[]
+                    {
                     new KeyValuePair<string, string>("rpath", rpath),
                     new KeyValuePair<string, string>("wpath", wpath),
                     new KeyValuePair<string, string>("rail_class", railClass),
-                }
-            );
+                    }
+                );
             try
             {
                 HttpResponseMessage response = await client.PostAsync(url, content);
@@ -1361,11 +1416,13 @@ namespace DamageMarker.ViewModels
         }
 
 
+        
         #region 伤损总结
 
 
         List<Details> GetCategorySummary(float CategoryIndex, List<DamageData> damageDataListPara, bool IsSortBySimilarity = false)
         {
+            Console.WriteLine("IsSortBySimilarity:" + IsSortBySimilarity);
             var result = new List<Details>();
 
             // 处理超速（类别48）的特殊逻辑
@@ -1381,7 +1438,7 @@ namespace DamageMarker.ViewModels
                             var speeds = ocr.speedvalue.Split(',');
                             foreach (var speedStr in speeds)
                             {
-                                if (float.TryParse(speedStr, out float speed) && speed > 1f)
+                                if (float.TryParse(speedStr, out float speed) && speed > 3f)
                                 {
                                     result.Add(new Details()
                                     {
@@ -1431,6 +1488,8 @@ namespace DamageMarker.ViewModels
                 }
             }
             return result;
+
+
         }
         [RelayCommand]
         void LocationImg(string Fpath)
@@ -1765,7 +1824,7 @@ namespace DamageMarker.ViewModels
                             ?.Children.Add(new DamageCategoryTree()
                             {
                                 Name = $"{DamageIdToDamageName(x.Value)}",
-                                Count = imageCount,
+                                Count = x.Key,
                                 ColorBrush = Brushes.Green,
                                 Children = GetCategorySummary(x.Value, nonTestTrackDatas)
                                 .OrderByDescending(x => x.Count).ToList()
@@ -1776,7 +1835,7 @@ namespace DamageMarker.ViewModels
                         RootCategoryList[0].Children.Add(new DamageCategoryTree()
                         {
                             Name = $"{DamageIdToDamageName(x.Value)}",
-                            Count = imageCount,
+                            Count = x.Key,
                             ColorBrush = Brushes.Green,
                             Children = GetCategorySummary(x.Value, nonTestTrackDatas)
                             .OrderByDescending(x => x.Count).ToList()
@@ -1790,7 +1849,7 @@ namespace DamageMarker.ViewModels
                         (轨头Category?[0] as DamageCategorySummaryTree)?.Children.Add(new DamageCategoryTree()
                         {
                             Name = $"{DamageIdToDamageName(x.Value)}",
-                            Count = imageCount,
+                            Count = x.Key,
                             Children = GetCategorySummary(x.Value, nonTestTrackDatas, true)
                             .OrderByDescending(x => x.weight).ToList()
                         });
@@ -1800,7 +1859,7 @@ namespace DamageMarker.ViewModels
                         轨头Category.Add(new DamageCategoryTree()
                         {
                             Name = $"{DamageIdToDamageName(x.Value)}",
-                            Count = imageCount,
+                            Count = x.Key,
                             Children = GetCategorySummary(x.Value, nonTestTrackDatas, true)
                             .OrderByDescending(x => x.weight).ToList()
                         });
@@ -1810,7 +1869,7 @@ namespace DamageMarker.ViewModels
                         轨腰Category.Add(new DamageCategoryTree()
                         {
                             Name = $"{DamageIdToDamageName(x.Value)}",
-                            Count = imageCount,
+                            Count = x.Key,
                             Children = GetCategorySummary(x.Value, nonTestTrackDatas, true)
                             .OrderByDescending(x => x.weight).ToList()
                         });
@@ -1820,8 +1879,8 @@ namespace DamageMarker.ViewModels
                         轨底Category.Add(new DamageCategoryTree()
                         {
                             Name = $"{DamageIdToDamageName(x.Value)}",
-                            Count = imageCount,
-                            Children = GetCategorySummary(x.Value, nonTestTrackDatas, true)
+                            Count = x.Key,
+                            Children = GetCategorySummary(x.Value, nonTestTrackDatas)
                             .OrderByDescending(x => x.weight).ToList()
                         });
                     }
@@ -1833,7 +1892,7 @@ namespace DamageMarker.ViewModels
                         (RootCategoryList[2].Children[0] as DamageCategorySummaryTree).Children.Add(new DamageCategoryTree()
                         {
                             Name = $"{DamageIdToDamageName(x.Value)}",
-                            Count = imageCount,
+                            Count = x.Key,
                             ColorBrush = Brushes.YellowGreen,
                             Children = GetCategorySummary(x.Value, nonTestTrackDatas)
                                               .OrderByDescending(x => x.Count).ToList()
@@ -1844,7 +1903,7 @@ namespace DamageMarker.ViewModels
                         RootCategoryList[2].Children.Add(new DamageCategoryTree()
                         {
                             Name = $"{DamageIdToDamageName(x.Value)}",
-                            Count = imageCount,
+                            Count = x.Key,
                             ColorBrush = Brushes.YellowGreen,
                             Children = GetCategorySummary(x.Value, nonTestTrackDatas)
                                               .OrderByDescending(x => x.Count).ToList()

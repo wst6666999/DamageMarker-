@@ -525,63 +525,77 @@
                             Foreground="{StaticResource DarkInfoBrush}"
                             Text="项目总览" />
                     </TabItem.Header>
-                    <TreeView
+                    <StackPanel>
+                        <ToggleButton
+                             Width="100"
+                             Margin="5"
+                             Content="隐藏正常标记"
+                             Effect="{StaticResource EffectShadow4}"
+                             IsChecked="{Binding IsHideNormalMarker}"
+                             Style="{StaticResource ToggleButtonSwitch}">
+                            <i:Interaction.Triggers>
+                                <i:EventTrigger EventName="Click">
+                                    <i:InvokeCommandAction Command="{Binding HideNormalMarkerCommand}" />
+                                </i:EventTrigger>
+                            </i:Interaction.Triggers>
+                        </ToggleButton>
+                        <TreeView
                             Name="TV"
                             Margin="5,5,-11,5"
                             Effect="{StaticResource EffectShadow4}"
                             ItemsSource="{Binding DamageTree}"
                             Style="{StaticResource TreeView.Small}" Height="725" Width="367">
-                        <i:Interaction.Triggers>
-                            <i:EventTrigger EventName="GotKeyboardFocus">
-                                <i:InvokeCommandAction Command="{Binding LocationImgCommand}" CommandParameter="{Binding SelectedItem.FileName, RelativeSource={RelativeSource AncestorType={x:Type TreeView}}}" />
-                            </i:EventTrigger>
-                        </i:Interaction.Triggers>
+                            <i:Interaction.Triggers>
+                                <i:EventTrigger EventName="GotKeyboardFocus">
+                                    <i:InvokeCommandAction Command="{Binding LocationImgCommand}" CommandParameter="{Binding SelectedItem.FileName, RelativeSource={RelativeSource AncestorType={x:Type TreeView}}}" />
+                                </i:EventTrigger>
+                            </i:Interaction.Triggers>
 
-                        <TreeView.ItemContainerStyle>
-                            <Style BasedOn="{StaticResource TreeViewItemBaseStyle}" TargetType="TreeViewItem">
-                                <Style.Triggers>
-                                    <Trigger Property="IsSelected" Value="True">
-                                        <Setter Property="Foreground" Value="Gray" />
-                                    </Trigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TreeView.ItemContainerStyle>
-                        <TreeView.Resources>
-                            <HierarchicalDataTemplate DataType="{x:Type md:DamageCategorySummaryTree}" ItemsSource="{Binding Children}">
-                                <TextBlock FontSize="17" Text="{Binding Name}" />
-                            </HierarchicalDataTemplate>
-                            <HierarchicalDataTemplate
+                            <TreeView.ItemContainerStyle>
+                                <Style BasedOn="{StaticResource TreeViewItemBaseStyle}" TargetType="TreeViewItem">
+                                    <Style.Triggers>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter Property="Foreground" Value="Gray" />
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TreeView.ItemContainerStyle>
+                            <TreeView.Resources>
+                                <HierarchicalDataTemplate DataType="{x:Type md:DamageCategorySummaryTree}" ItemsSource="{Binding Children}">
+                                    <TextBlock FontSize="17" Text="{Binding Name}" />
+                                </HierarchicalDataTemplate>
+                                <HierarchicalDataTemplate
                                     AlternationCount="1000"
                                     DataType="{x:Type md:DamageCategoryTree}"
                                     ItemsSource="{Binding Children}">
-                                <Border>
-                                    <Border.Style>
-                                        <Style BasedOn="{StaticResource BorderTipDanger}" TargetType="Border">
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding ColorBrush}" Value="{x:Static Brushes.Green}">
-                                                    <Setter Property="Background" Value="{StaticResource LightSuccessBrush}" />
-                                                    <Setter Property="BorderBrush" Value="{StaticResource SuccessBrush}" />
-                                                </DataTrigger>
-                                                <DataTrigger Binding="{Binding ColorBrush}" Value="{x:Static Brushes.YellowGreen}">
-                                                    <Setter Property="Background" Value="{StaticResource LightWarningBrush}" />
-                                                    <Setter Property="BorderBrush" Value="{StaticResource WarningBrush}" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Border.Style>
-                                    <StackPanel Width="210" Orientation="Horizontal">
-                                        <TextBlock
+                                    <Border>
+                                        <Border.Style>
+                                            <Style BasedOn="{StaticResource BorderTipDanger}" TargetType="Border">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding ColorBrush}" Value="{x:Static Brushes.Green}">
+                                                        <Setter Property="Background" Value="{StaticResource LightSuccessBrush}" />
+                                                        <Setter Property="BorderBrush" Value="{StaticResource SuccessBrush}" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding ColorBrush}" Value="{x:Static Brushes.YellowGreen}">
+                                                        <Setter Property="Background" Value="{StaticResource LightWarningBrush}" />
+                                                        <Setter Property="BorderBrush" Value="{StaticResource WarningBrush}" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <StackPanel Width="210" Orientation="Horizontal">
+                                            <TextBlock
                                                 FontSize="{StaticResource SubHeadFontSize}"
                                                 MouseDown="TextBlock_MouseDown"
                                                 Text="{Binding Name}" />
-                                        <TextBlock FontSize="16" Text="{Binding Count, StringFormat='  次数:{0}'}" />
-                                    </StackPanel>
-                                </Border>
+                                            <TextBlock FontSize="16" Text="{Binding Count, StringFormat='  次数:{0}'}" />
+                                        </StackPanel>
+                                    </Border>
 
-                            </HierarchicalDataTemplate>
-                            <DataTemplate DataType="{x:Type md:Details}">
+                                </HierarchicalDataTemplate>
+                                <DataTemplate DataType="{x:Type md:Details}">
 
-                                <Border
+                                    <Border
                                     Margin="5"
                                     BorderThickness="2"
                                     CornerRadius="5"
@@ -589,43 +603,44 @@
                                     MouseDown="Border_MouseDown"
                                     Background="{Binding Background}">
 
-                                    <!-- 保留样式的基础样式，但不覆盖 Background -->
-                                    <Border.Style>
-                                        <Style TargetType="Border" BasedOn="{StaticResource BorderTipPrimary}">
-                                            <!-- ❌ 不要再在这里设置 Background 否则会覆盖绑定 -->
-                                            <!-- <Setter Property="Background" Value="White" /> -->
-                                        </Style>
-                                    </Border.Style>
+                                        <!-- 保留样式的基础样式，但不覆盖 Background -->
+                                        <Border.Style>
+                                            <Style TargetType="Border" BasedOn="{StaticResource BorderTipPrimary}">
+                                                <!-- ❌ 不要再在这里设置 Background 否则会覆盖绑定 -->
+                                                <!-- <Setter Property="Background" Value="White" /> -->
+                                            </Style>
+                                        </Border.Style>
 
-                                    <WrapPanel Width="200" Orientation="Horizontal">
-                                        <Label HorizontalAlignment="Right"
+                                        <WrapPanel Width="200" Orientation="Horizontal">
+                                            <Label HorizontalAlignment="Right"
                          Content="{Binding (ItemsControl.AlternationIndex), 
                          RelativeSource={RelativeSource AncestorType=TreeViewItem}, 
                          StringFormat='{}{0}', 
                          Converter={StaticResource AddOneConverter}}" />
-                                        <TextBlock
+                                            <TextBlock
                          x:Name="summaryFileName"
                          Width="120"
                          Margin="5,0"
                          Foreground="Black"
                          Text="{Binding FileName, StringFormat='里程号:{0}'}"
                          ToolTip="{Binding FileName}" />
-                                        <hc:ElementGroup>
-                                            <TextBlock
+                                            <hc:ElementGroup>
+                                                <TextBlock
                              Margin="10,0"
                              Foreground="Black"
                              Text="{Binding Count, StringFormat='次数:{0}'}" />
-                                            <TextBlock
+                                                <TextBlock
                              Margin="10,0"
                              Foreground="Black"
                              Text="{Binding weight, StringFormat='权重:{0}'}"
                              Visibility="{Binding weight, Converter={StaticResource Object2VisibilityConverter}}" />
-                                        </hc:ElementGroup>
-                                    </WrapPanel>
-                                </Border>
-                            </DataTemplate>
-                        </TreeView.Resources>
-                    </TreeView>
+                                            </hc:ElementGroup>
+                                        </WrapPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </TreeView.Resources>
+                        </TreeView>
+                    </StackPanel>
                 </TabItem>
                 <TabItem Height="30" ScrollViewer.VerticalScrollBarVisibility="Visible">
                     <TabItem.Header>
@@ -635,19 +650,6 @@
                             Text="单个总览" />
                     </TabItem.Header>
                     <StackPanel>
-                        <ToggleButton
-                            Width="100"
-                            Margin="5"
-                            Content="隐藏正常标记"
-                            Effect="{StaticResource EffectShadow4}"
-                            IsChecked="{Binding IsHideNormalMarker}"
-                            Style="{StaticResource ToggleButtonSwitch}">
-                            <i:Interaction.Triggers>
-                                <i:EventTrigger EventName="Click">
-                                    <i:InvokeCommandAction Command="{Binding HideNormalMarkerCommand}" />
-                                </i:EventTrigger>
-                            </i:Interaction.Triggers>
-                        </ToggleButton>
                         <DataGrid
                             Height="690"
                             Margin="3"
@@ -666,28 +668,6 @@
                                 </DataGridTemplateColumn>
                                 <!--<DataGridTextColumn Binding="{Binding DamageCategory}"  Header="伤损类别" />-->
                                 <DataGridTextColumn Binding="{Binding Similarity}" Header="相似度" />
-                                <DataGridTemplateColumn>
-                                    <DataGridTemplateColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <StackPanel Orientation="Horizontal">
-                                                <ToggleButton
-                                                    Margin="2"
-                                                    Focusable="False"
-                                                    Style="{StaticResource ToggleButtonSuccess}"
-                                                    >
-                                                    
-                                                    显示
-                                                </ToggleButton>
-                                                <ToggleButton
-                                                    Margin="2"
-                                                    Focusable="False"
-                                                    Style="{StaticResource ToggleButtonDanger}">
-                                                    隐藏
-                                                </ToggleButton>
-                                            </StackPanel>
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
                             </DataGrid.Columns>
                         </DataGrid>
                     </StackPanel>
@@ -788,6 +768,18 @@
                         </Button>
                     </StackPanel>
                     <StackPanel
+                        Grid.ColumnSpan="2"
+                        Orientation="Horizontal"
+                        Visibility="{Binding ImgProgressVisibility}">
+                        <TextBlock VerticalAlignment="Center">图片绘制进度:</TextBlock>
+                        <ProgressBar
+                            Width="240"
+                            HorizontalAlignment="center"
+                            Maximum="{Binding TotalImgProgress}"
+                            Style="{StaticResource ProgressBarSuccess}"
+                            Value="{Binding CurrentImgProgress}" />
+                    </StackPanel>
+                    <StackPanel
                             Grid.ColumnSpan="2"
                             Orientation="Horizontal"
                             Visibility="{Binding ProgressVisibility}">
@@ -835,29 +827,40 @@
                     MaxWidth="1552"
                     MaxHeight="564">
                     <Border BorderBrush="{Binding ImgBorderBrush}" BorderThickness="10,10,10,10">
-                        <local:DamageDisplayBox 
-                            x:Name="damageViewer"
-                            Width="1920"
-                            Height="800"
-                            SourceImage="{Binding ImgSource}"
-                            MouseWheel="DamageViewer_MouseWheel"
-                            MouseMove="DamageViewer_MouseMove"
-                            MouseLeftButtonDown="DamageViewer_MouseLeftButtonDown"
-                            MouseLeftButtonUp="DamageViewer_MouseLeftButtonUp">
-                            <local:DamageDisplayBox.RenderTransform>
-                                <TransformGroup>
-                                    <ScaleTransform/>
-                                    <TranslateTransform/>
-                                </TransformGroup>
-                            </local:DamageDisplayBox.RenderTransform>
-                            
-                            <hc:AdornerElement.Instance>
-                                <hc:Magnifier
-                                            HorizontalOffset="-16"
-                                            Scale="2"
-                                            VerticalOffset="-16"/>
-                            </hc:AdornerElement.Instance>
+                        <Grid>
+                            <!-- 显示图像 -->
+                            <local:DamageDisplayBox 
+                                x:Name="damageViewer"
+                                Width="1920"
+                                Height="800"
+                                SourceImage="{Binding ImgSource}"
+                                MouseWheel="DamageViewer_MouseWheel"
+                                MouseMove="DamageViewer_MouseMove"
+                                MouseLeftButtonDown="DamageViewer_MouseLeftButtonDown"
+                                MouseLeftButtonUp="DamageViewer_MouseLeftButtonUp" Loaded="damageViewer_Loaded_1">
+                                <local:DamageDisplayBox.RenderTransform>
+                                    <TransformGroup>
+                                        <ScaleTransform/>
+                                        <TranslateTransform/>
+                                    </TransformGroup>
+                                </local:DamageDisplayBox.RenderTransform>
                             </local:DamageDisplayBox>
+
+                            <!-- 保存按钮 -->
+                            <Button Click="ExportOriginalImage_Click"
+                                Width="40"
+                                Height="40"
+                                Background="#AAFFFFFF"
+                                ToolTip="导出原图"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                Margin="10"
+                                BorderThickness="0"
+                                FontSize="18">
+                                <TextBlock Text="💾"/>
+                            </Button>
+                        </Grid>
+
                     </Border>
                 </Viewbox>
 

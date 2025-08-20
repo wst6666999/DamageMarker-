@@ -3,12 +3,14 @@ using DamageMaker.Models;
 using DamageMaker.Views;
 using DamageMarker.ViewModels;
 using DocumentFormat.OpenXml.Drawing;
+using DocumentFormat.OpenXml.InkML;
 using HandyControl.Controls;
 using HandyControl.Interactivity;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.Eventing.Reader;
+using System.IO;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
@@ -16,6 +18,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using static System.Net.Mime.MediaTypeNames;
 
 
@@ -36,9 +39,9 @@ namespace DamageMarker.Views
             DataContext = MainVm;
             MainWindowViewModel.ScreenShotPopuped += OnScreenShotPopuped;
             //PlaybackWindow.ScreenshotFinished += OnScreenshotFinished;
-           
+
             Scal.ScaleX = 1 / DamageMaker.Common.Monitor.ScaleX;
-            Scal.ScaleY = 1 / DamageMaker.Common.Monitor.ScaleY;            
+            Scal.ScaleY = 1 / DamageMaker.Common.Monitor.ScaleY;
         }
         private void OnScreenShotPopuped(object sender, EventArgs e)
         {
@@ -101,7 +104,7 @@ namespace DamageMarker.Views
             {
                 if (DataContext is MainWindowViewModel vm)
                 {
-                    if ((border.Background is SolidColorBrush brush &&brush.Color == Colors.OrangeRed))
+                    if ((border.Background is SolidColorBrush brush && brush.Color == Colors.OrangeRed))
                     {
                         return;
                     }
@@ -122,8 +125,8 @@ namespace DamageMarker.Views
         public static T? FindLogicalParent<T>(DependencyObject child) where T : DependencyObject
         {
             // 获取父元素
-            DependencyObject parentObject = VisualTreeHelper .GetParent(child);
-            
+            DependencyObject parentObject = VisualTreeHelper.GetParent(child);
+
 
             // 如果没有父元素，则返回 null
             if (parentObject == null) return null;
@@ -142,12 +145,12 @@ namespace DamageMarker.Views
 
         private void Border_GotFocus(object sender, RoutedEventArgs e)
         {
-           
+
         }
 
         private void Border_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
-            
+
         }
 
         private void ThumbnailList_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
@@ -282,6 +285,83 @@ namespace DamageMarker.Views
             }
         }
 
-        
+        private void damageViewer_Loaded(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void ExportOriginalImage_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (damageViewer.SourceImage is BitmapImage bitmapImage)
+                {
+                    // 原始文件名（不带路径）
+                    string originalFileName = System.IO.Path.GetFileName(bitmapImage.UriSource?.LocalPath);
+
+                    if (string.IsNullOrEmpty(originalFileName))
+                        originalFileName = $"Exported_{DateTime.Now:yyyyMMdd_HHmmss}.png"; // 万一没有文件名，就用默认名
+
+                    // 桌面\Pictures 文件夹
+                    string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+                    string picturesFolder = System.IO.Path.Combine(desktopPath, "Pictures");
+
+                    // 如果文件夹不存在，就创建
+                    if (!Directory.Exists(picturesFolder))
+                        Directory.CreateDirectory(picturesFolder);
+
+                    // 导出路径
+                    string filePath = System.IO.Path.Combine(picturesFolder, originalFileName);
+
+                    // 保存 PNG
+                    using (FileStream fs = new FileStream(filePath, FileMode.Create))
+                    {
+                        PngBitmapEncoder encoder = new PngBitmapEncoder();
+                        encoder.Frames.Add(BitmapFrame.Create(bitmapImage));
+                        encoder.Save(fs);
+                    }
+
+                    System.Windows.MessageBox.Show($"原始图片已导出到:\n{filePath}",
+                        "导出成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                else if (damageViewer.SourceImage is BitmapSource bitmapSource)
+                {
+                    // 没有 UriSource，只能生成一个默认名字
+                    string originalFileName = $"Exported_{DateTime.Now:yyyyMMdd_HHmmss}.png";
+
+                    string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+                    string picturesFolder = System.IO.Path.Combine(desktopPath, "Pictures");
+
+                    if (!Directory.Exists(picturesFolder))
+                        Directory.CreateDirectory(picturesFolder);
+
+                    string filePath = System.IO.Path.Combine(picturesFolder, originalFileName);
+
+                    using (FileStream fs = new FileStream(filePath, FileMode.Create))
+                    {
+                        PngBitmapEncoder encoder = new PngBitmapEncoder();
+                        encoder.Frames.Add(BitmapFrame.Create(bitmapSource));
+                        encoder.Save(fs);
+                    }
+
+                    System.Windows.MessageBox.Show($"原始图片已导出到:\n{filePath}",
+                        "导出成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                else
+                {
+                    System.Windows.MessageBox.Show("SourceImage 为空或不是可导出的类型。");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show("导出失败: " + ex.Message,
+                    "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void damageViewer_Loaded_1(object sender, RoutedEventArgs e)
+        {
+
+        }
     }
 }

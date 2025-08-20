@@ -50,5 +50,10 @@ namespace DamageMaker.Views
         {
 
         }
+
+        private void TextBox_TextChanged_4(object sender, TextChangedEventArgs e)
+        {
+
+        }
     }
 }

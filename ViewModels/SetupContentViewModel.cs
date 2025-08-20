@@ -140,12 +140,13 @@ namespace DamageMaker.ViewModels
         
         }
         [RelayCommand]
-        void ConcealFishScaleChanged()
+        async void ConcealFishScaleChanged()
         {
-          Console.WriteLine("隐藏鱼鳞设置已更改: " + IsConcealFishScale+"将清空所有out文件夹");
-           Directory.Delete(Settings.Default.OutPath, true);
+            // Console.WriteLine("隐藏鱼鳞设置已更改: " + IsConcealFishScale);
+            Settings.Default.IsConcealFishScale = IsConcealFishScale;
+            Console.WriteLine("隐藏鱼鳞设置已更改: " + IsConcealFishScale);
 
-
+            WeakReferenceMessenger.Default.Send(new ConcealFishScaleMessage(IsConcealFishScale));
         }
 
 

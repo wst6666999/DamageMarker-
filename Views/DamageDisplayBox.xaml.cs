@@ -6,6 +6,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using DamageMaker.DamageDataProcessing;
+using DamageMaker.Models;
 using DamageMaker.Properties;
 
 namespace DamageMaker.Views
@@ -144,33 +145,63 @@ namespace DamageMaker.Views
             }
         }
 
+        private bool IsPureFishScaleDamage(float[] point, int index)
+        {
+            // 单个伤损
+            if (point.Length <= 6 || point[6] < 100000)
+            {
+                return point[4] == 36 || point[4] == 23;
+            }
+
+            // 合并伤损
+            if (_mergedDamageMap.TryGetValue(index, out var mergedIds))
+            {
+                return mergedIds.All(id => id == 36 || id == 23);
+            }
+
+            return point[4] == 36 || point[4] == 23;
+        }
+
         private void UpdateDamageMarks()
         {
             OverlayCanvas.Children.Clear();
-            _labelPositions.Clear(); // 清空标签位置记录
+            _labelPositions.Clear();
+            _mergedDamageMap.Clear(); // 清空合并记录
 
             if (DamagePoints == null || SourceImage == null)
                 return;
 
-            for (int i = 0; i < DamagePoints.Length; i++)
-            {
-                var point = DamagePoints[i];
+            // 预处理：合并重叠的红色伤损框
+            List<float[]> mergedPoints = MergeOverlappingDamagePoints(DamagePoints);
 
-                // 跳过鱼鳞伤条件
-                if ((point[4] == 36 || point[4] == 23) && HideFishScale)
+            for (int i = 0; i < mergedPoints.Count; i++)
+            {
+                var point = mergedPoints[i];
+
+                // 检查是否是纯鱼鳞伤（单个或全部合并ID都是鱼鳞伤）
+                bool isPureFishScale = IsPureFishScaleDamage(point, i);
+                if (isPureFishScale && HideFishScale)
                 {
-                    Console.WriteLine($"当前鱼鳞伤ID: {point[4]}, HideFishScale状态: {HideFishScale}");
-                    continue;
+                    continue; // 跳过纯鱼鳞伤
                 }
 
                 float x = point[0], y = point[1];
                 float width = point[2], height = point[3];
                 float similarity = point[5] < 0.5f ? 0.5f : point[5];
 
-                // 计算圆角半径
+                // 计算圆角半径（相似度越低，圆角越大）
                 double cornerRadiusX = width / 2 * (1 - similarity);
                 double cornerRadiusY = height / 2 * (1 - similarity);
 
+                if (Settings.Default.IsHideNormalMarker)
+                {
+                    //Console.WriteLine("当前设置为隐藏正常类标记。");
+                    //不显示正常类
+                    if (DataConversion.DamageIdToBrush(point[4]) == Brushes.Green || DataConversion.DamageIdToBrush(point[4]) == Brushes.YellowGreen)
+                    {
+                        continue;
+                    }
+                }
                 // 创建标记框
                 var border = new Border
                 {
@@ -179,36 +210,218 @@ namespace DamageMaker.Views
                     BorderThickness = new Thickness(4),
                     BorderBrush = GetDamageBrush(point[4], similarity),
                     CornerRadius = new CornerRadius(
-                        cornerRadiusX,  // topLeft
-                        cornerRadiusX,  // topRight
-                        cornerRadiusY,  // bottomRight
-                        cornerRadiusY), // bottomLeft
+                        cornerRadiusX,  // 左上角
+                        cornerRadiusX,  // 右上角
+                        cornerRadiusY,  // 右下角
+                        cornerRadiusY), // 左下角
                     Background = Brushes.Transparent
                 };
-
                 Canvas.SetLeft(border, x);
                 Canvas.SetTop(border, y);
                 OverlayCanvas.Children.Add(border);
 
-                // 添加标签（使用优化的位置计算）
+                // 添加防重叠标签
                 AddLabelWithAntiOverlap(i, point, x, y, width, height);
             }
         }
 
+        public enum MergeStrategy
+        {
+            Union,      // 取所有框的并集（最大范围）
+            Intersect,  // 取所有框的交集（共同区域）
+            Average,    // 取所有框的平均位置和大小
+            Largest,    // 取最大的那个框
+            Smallest    // 取最小的那个框
+        }
+
+        private List<float[]> MergeOverlappingDamagePoints(float[][] points, MergeStrategy strategy = MergeStrategy.Union)
+        {
+            List<float[]> result = new List<float[]>();
+            if (points == null || points.Length == 0) return result;
+
+            // 使用数组代替List<bool>提高性能
+            bool[] merged = new bool[points.Length];
+
+            // 预缓存伤损ID对应的颜色，优化查找性能
+            var redDamageCache = new Dictionary<int, bool>();
+            foreach (var category in Records.DamageCategoryData)
+            {
+                redDamageCache[category.Id] = category.CategoryColor == Brushes.Red;
+            }
+
+            for (int i = 0; i < points.Length; i++)
+            {
+                if (merged[i]) continue;
+
+                float[] current = EnsurePointLength(points[i], 7);
+                Rect currentRect = CreateRect(current);
+
+                List<Rect> rectsToMerge = new List<Rect> { currentRect };
+                HashSet<int> mergedDamageIds = new HashSet<int> { (int)current[4] };
+
+                for (int j = i + 1; j < points.Length; j++)
+                {
+                    if (merged[j]) continue;
+
+                    float[] other = EnsurePointLength(points[j], 7);
+                    Rect otherRect = CreateRect(other);
+
+                    if (IsMergeable(redDamageCache, current, other, currentRect, otherRect))
+                    {
+                        rectsToMerge.Add(otherRect);
+                        mergedDamageIds.Add((int)other[4]);
+                        merged[j] = true;
+                    }
+                }
+
+                Rect finalRect = CalculateMergedRect(rectsToMerge, strategy);
+                float[] mergedPoint = CreateMergedPoint(current, finalRect, mergedDamageIds);
+
+                if (mergedDamageIds.Count > 1)
+                {
+                    mergedPoint[6] = 100000 + mergedDamageIds.Count;
+                    _mergedDamageMap[result.Count] = mergedDamageIds.OrderBy(id => id).ToList();
+                }
+
+                result.Add(mergedPoint);
+            }
+
+            return result;
+        }
+
+        // 辅助方法
+        private float[] EnsurePointLength(float[] point, int length)
+        {
+            if (point.Length >= length) return point;
+
+            float[] newPoint = new float[length];
+            Array.Copy(point, newPoint, point.Length);
+            newPoint[6] = -1; // 设置默认值
+            return newPoint;
+        }
+
+        private Rect CreateRect(float[] point)
+        {
+            return new Rect(point[0], point[1], point[2], point[3]);
+        }
+
+        private bool IsMergeable(Dictionary<int, bool> redDamageCache, float[] current, float[] other, Rect currentRect, Rect otherRect)
+        {
+            bool isCurrentRed = redDamageCache.TryGetValue((int)current[4], out bool currentRed) && currentRed;
+            bool isOtherRed = redDamageCache.TryGetValue((int)other[4], out bool otherRed) && otherRed;
+
+            return isCurrentRed && isOtherRed && currentRect.IntersectsWith(otherRect);
+        }
+
+        private float[] CreateMergedPoint(float[] original, Rect finalRect, HashSet<int> mergedDamageIds)
+        {
+            float[] mergedPoint = new float[7];
+            Array.Copy(original, mergedPoint, Math.Min(original.Length, 7));
+
+            // 设置合并后的主ID（优先使用非鱼鳞伤ID）
+            int mainId = mergedDamageIds.FirstOrDefault(id => !HideFishScale || (id != 36 && id != 23));
+            mergedPoint[4] = mainId != 0 ? mainId : mergedDamageIds.First();
+
+            mergedPoint[0] = (float)finalRect.X;
+            mergedPoint[1] = (float)finalRect.Y;
+            mergedPoint[2] = (float)finalRect.Width;
+            mergedPoint[3] = (float)finalRect.Height;
+
+            return mergedPoint;
+        }
+
+        /// <summary>
+        /// 根据合并策略计算合并后的矩形
+        /// </summary>
+        /// <param name="rects"></param>
+        /// <param name="strategy"></param>
+        /// <returns></returns>
+        private Rect CalculateMergedRect(List<Rect> rects, MergeStrategy strategy)
+        {
+            if (rects.Count == 1) return rects[0];
+
+            switch (strategy)
+            {
+                case MergeStrategy.Union:
+                    double left = rects.Min(r => r.Left);
+                    double top = rects.Min(r => r.Top);
+                    double right = rects.Max(r => r.Right);
+                    double bottom = rects.Max(r => r.Bottom);
+                    return new Rect(left, top, right - left, bottom - top);
+
+                case MergeStrategy.Intersect:
+                    double intersectLeft = rects.Max(r => r.Left);
+                    double intersectTop = rects.Max(r => r.Top);
+                    double intersectRight = rects.Min(r => r.Right);
+                    double intersectBottom = rects.Min(r => r.Bottom);
+                    if (intersectLeft > intersectRight || intersectTop > intersectBottom)
+                        return rects[0]; // 无交集时返回第一个矩形
+                    return new Rect(intersectLeft, intersectTop,
+                                  intersectRight - intersectLeft,
+                                  intersectBottom - intersectTop);
+
+                case MergeStrategy.Average:
+                    double avgX = rects.Average(r => r.X);
+                    double avgY = rects.Average(r => r.Y);
+                    double avgWidth = rects.Average(r => r.Width);
+                    double avgHeight = rects.Average(r => r.Height);
+                    return new Rect(avgX, avgY, avgWidth, avgHeight);
+
+                case MergeStrategy.Largest:
+                    var largest = rects.OrderByDescending(r => r.Width * r.Height).First();
+                    return largest;
+
+                case MergeStrategy.Smallest:
+                    var smallest = rects.OrderBy(r => r.Width * r.Height).First();
+                    return smallest;
+
+                default:
+                    return rects[0];
+            }
+        }
+        // 辅助字典存储合并ID（临时方案）
+        private Dictionary<int, List<int>> _mergedDamageMap = new Dictionary<int, List<int>>();
+
         /// <summary>
         /// 添加标签并避免与其他标签重叠
         /// </summary>
+        // 修改标签添加方法
         private void AddLabelWithAntiOverlap(int index, float[] point, float x, float y, float width, float height)
         {
+            string damageNames;
+
+            // 处理合并伤损
+            if (point.Length > 6 && point[6] >= 100000 && _mergedDamageMap.TryGetValue(index, out var mergedIds))
+            {
+                // 过滤鱼鳞伤文字（如果开启隐藏）
+                var filteredIds = HideFishScale
+                    ? mergedIds.Where(id => id != 36 && id != 23).ToList()
+                    : mergedIds;
+
+                if (filteredIds.Count == 0) return; // 没有可显示的内容
+
+                // 修正：使用filteredIds中的每个id来获取名称
+                damageNames = string.Join(", ", filteredIds.Select(id => DataConversion.DamageIdToDamageName(id)));
+            }
+            // 处理单个伤损
+            else
+            {
+                if (HideFishScale && (point[4] == 36 || point[4] == 23))
+                    return;
+
+                damageNames = DataConversion.DamageIdToDamageName((int)point[4]);
+            }
+            // 剩余标签渲染逻辑保持不变...
             var textBlock = new TextBlock
             {
-                Text = $"{DataConversion.DamageIdToDamageName(point[4])} {index}",
+                Text = $"{damageNames} [{index}]",
                 FontFamily = new FontFamily("微软雅黑"),
                 FontSize = 12,
                 Foreground = Brushes.White,
                 Background = new SolidColorBrush(Color.FromArgb(150, 0, 0, 0)),
-                Padding = new Thickness(3)
-            };//将伤损ID转换为对应的名称显示出来
+                Padding = new Thickness(3),
+                TextWrapping = TextWrapping.Wrap  // 允许文本换行
+            };
 
             // 强制布局计算
             OverlayCanvas.Children.Add(textBlock);
@@ -244,7 +457,6 @@ namespace DamageMaker.Views
             OverlayCanvas.Children.Add(textBlock);
             _labelPositions.Add(new Rect(defaultX, defaultY, textWidth, textHeight));
         }
-
         private List<Point> GenerateLabelPositions(float x, float y, float width, float height, double textWidth, double textHeight)
         {
             var positions = new List<Point>();
@@ -307,171 +519,11 @@ namespace DamageMaker.Views
         }
 
         /// <summary>
-        /// 添加标签并智能避免与其他标签重叠
+        /// 根据伤损ID和相似度获取对应的画刷
         /// </summary>
-        //private void AddLabelWithAntiOverlap(int index, float[] point, float x, float y, float width, float height)
-        //{
-        //    var textBlock = new TextBlock
-        //    {
-        //        Text = $"{DataConversion.DamageIdToDamageName(point[4])} {index}",
-        //        FontFamily = new FontFamily("微软雅黑"),
-        //        FontSize = 12,
-        //        Foreground = Brushes.White,
-        //        Background = new SolidColorBrush(Color.FromArgb(150, 0, 0, 0)),
-        //        Padding = new Thickness(3)
-        //    };
-
-        //    // 预计算文本块尺寸（更高效的方式）
-        //    textBlock.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-        //    textBlock.Arrange(new Rect(0, 0, textBlock.DesiredSize.Width, textBlock.DesiredSize.Height));
-        //    double textWidth = textBlock.DesiredSize.Width;
-        //    double textHeight = textBlock.DesiredSize.Height;
-
-        //    // 生成候选位置并按优先级排序
-        //    var possiblePositions = GenerateLabelPositions(x, y, width, height, textWidth, textHeight)
-        //        .OrderBy(p => p.Priority)
-        //        .Select(p => p.Point);
-
-        //    // 检查每个候选位置
-        //    foreach (var pos in possiblePositions)
-        //    {
-        //        Rect newRect = new Rect(pos.X, pos.Y, textWidth, textHeight);
-
-        //        if (IsPositionValid(newRect))
-        //        {
-        //            OverlayCanvas.Children.Add(textBlock);
-        //            Canvas.SetLeft(textBlock, pos.X);
-        //            Canvas.SetTop(textBlock, pos.Y);
-        //            _labelPositions.Add(newRect);
-        //            return;
-        //        }
-        //    }
-
-        //    // 保底方案：使用最佳可能位置（即使有轻微重叠）
-        //    var bestPosition = FindLeastOverlappingPosition(x, y, textWidth, textHeight);
-        //    OverlayCanvas.Children.Add(textBlock);
-        //    Canvas.SetLeft(textBlock, bestPosition.X);
-        //    Canvas.SetTop(textBlock, bestPosition.Y);
-        //    _labelPositions.Add(new Rect(bestPosition.X, bestPosition.Y, textWidth, textHeight));
-        //}
-
-        //private List<(Point Point, int Priority)> GenerateLabelPositions(float x, float y, float width, float height, double textWidth, double textHeight)
-        //{
-        //    var positions = new List<(Point, int)>();
-
-        //    // 优先级1：紧邻损伤框的最佳位置（最高优先级）
-        //    positions.Add((new Point(x + width + 5, y), 1)); // 右侧
-        //    positions.Add((new Point(x - textWidth - 5, y), 1)); // 左侧
-        //    positions.Add((new Point(x, y + height + 5), 2)); // 下方
-        //    positions.Add((new Point(x, y - textHeight - 5), 2)); // 上方
-
-        //    // 优先级2：角落位置
-        //    positions.Add((new Point(x + width + 5, y + height - textHeight), 3));
-        //    positions.Add((new Point(x - textWidth - 5, y + height - textHeight), 3));
-        //    positions.Add((new Point(x + width - textWidth, y - textHeight - 5), 3));
-        //    positions.Add((new Point(x, y - textHeight - 5), 3));
-
-        //    // 优先级3：螺旋向外搜索位置（带角度变化）
-        //    int steps = 5;
-        //    double angleStep = Math.PI / 4; // 45度角变化
-        //    double startRadius = 15;
-
-        //    for (int i = 1; i <= steps; i++)
-        //    {
-        //        double radius = startRadius * i;
-        //        for (double angle = 0; angle < 2 * Math.PI; angle += angleStep)
-        //        {
-        //            double offsetX = radius * Math.Cos(angle);
-        //            double offsetY = radius * Math.Sin(angle);
-        //            positions.Add((new Point(x + offsetX, y + offsetY), 4 + i));
-        //        }
-        //    }
-
-        //    return positions;
-        //}
-
-        //private bool IsPositionValid(Rect newRect)
-        //{
-        //    // 快速检查是否在画布范围内
-        //    if (newRect.Left < 0 || newRect.Top < 0 ||
-        //        newRect.Right > OverlayCanvas.ActualWidth ||
-        //        newRect.Bottom > OverlayCanvas.ActualHeight)
-        //    {
-        //        return false;
-        //    }
-
-        //    // 使用空间分区或四叉树优化大型数据集
-        //    // 这里简化处理，实际项目中可考虑优化
-        //    const double padding = 5;
-        //    Rect expandedNewRect = new Rect(
-        //        newRect.Left - padding,
-        //        newRect.Top - padding,
-        //        newRect.Width + 2 * padding,
-        //        newRect.Height + 2 * padding);
-
-        //    foreach (var existingRect in _labelPositions)
-        //    {
-        //        if (expandedNewRect.IntersectsWith(existingRect))
-        //        {
-        //            return false;
-        //        }
-        //    }
-
-        //    return true;
-        //}
-
-        private Point FindLeastOverlappingPosition(double x, double y, double width, double height)
-        {
-            // 尝试找到重叠面积最小的位置
-            var candidates = new List<Point>
-    {
-        new Point(Math.Max(0, x - width - 5), Math.Max(0, y - height - 5)),
-        new Point(Math.Max(0, x - width - 5), Math.Min(OverlayCanvas.ActualHeight - height, y + height + 5)),
-        new Point(Math.Min(OverlayCanvas.ActualWidth - width, x + width + 5), Math.Max(0, y - height - 5)),
-        new Point(Math.Min(OverlayCanvas.ActualWidth - width, x + width + 5), Math.Min(OverlayCanvas.ActualHeight - height, y + height + 5))
-    };
-
-            // 评估每个候选位置的重叠程度
-            var bestPosition = candidates[0];
-            double minOverlap = double.MaxValue;
-
-            foreach (var candidate in candidates)
-            {
-                Rect rect = new Rect(candidate.X, candidate.Y, width, height);
-                double overlap = CalculateTotalOverlap(rect);
-
-                if (overlap < minOverlap)
-                {
-                    minOverlap = overlap;
-                    bestPosition = candidate;
-                }
-            }
-
-            return bestPosition;
-        }
-
-        private double CalculateTotalOverlap(Rect rect)
-        {
-            const double padding = 5;
-            Rect expandedRect = new Rect(
-                rect.Left - padding,
-                rect.Top - padding,
-                rect.Width + 2 * padding,
-                rect.Height + 2 * padding);
-
-            double totalOverlap = 0;
-
-            foreach (var existingRect in _labelPositions)
-            {
-                if (expandedRect.IntersectsWith(existingRect))
-                {
-                    Rect intersection = Rect.Intersect(expandedRect, existingRect);
-                    totalOverlap += intersection.Width * intersection.Height;
-                }
-            }
-
-            return totalOverlap;
-        }
+        /// <param name="damageId"></param>
+        /// <param name="similarity"></param>
+        /// <returns></returns>
         private Brush GetDamageBrush(float damageId, float similarity)
         {
             var baseColor = DataConversion.DamageIdToBrush(damageId).Color;

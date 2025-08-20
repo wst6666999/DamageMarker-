@@ -51,7 +51,7 @@ namespace DamageMaker.DamageDataProcessing
                         var parts = ocr.speedvalue.Split(',');
                         foreach (var part in parts)
                         {
-                            if (float.TryParse(part, out float speed) && speed > 1f)
+                            if (float.TryParse(part, out float speed) && speed > 3f)
                             {
                                 speedCount++;
                             }

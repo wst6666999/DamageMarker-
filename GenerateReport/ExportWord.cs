@@ -52,7 +52,7 @@ namespace DamageMaker.GenerateReport
         {
             try
             {
-                document = DocX.Load(".\\Resources\\word报告模板1.docx");
+                document = DocX.Load(".\\Resources\\上海报告.docx");
 
                 var statisticalTable = document.Tables.FirstOrDefault();//获取模版的第一个表格
                 FillInTable(statisticalTable);//填充统计表格

@@ -14,7 +14,7 @@ namespace DamageMaker.Models
         普通焊缝 = 2,
         七十度螺孔回波 = 3,
         轨形变换 = 4,
-        母材核伤 = 5,
+        其他核伤 = 5,
         焊缝核伤 = 6,
         螺孔裂纹 = 7,
         零度异常 = 8,
@@ -33,6 +33,7 @@ namespace DamageMaker.Models
         假像波 = 22,
         鱼鳞伤_规则 = 23,
         岔心 = 24,
+        核伤3_母材 = 26,
         核伤1_母材 = 27,
         正常螺孔 = 28,
         水平裂纹 = 29,
@@ -54,13 +55,21 @@ namespace DamageMaker.Models
         岔心_非母材 = 45,
         厂焊=46,
         铝热焊=47,
-        超速=48
+        超速=48,
+        倒车=49,
+        失底波 = 51,
+        有焊缝标记核伤 = 52
     }
     public enum MoveDirection
     {
         Left,
         Right
     }
-
-
+    public enum DamageStatus
+    {
+        UNKNOWN,
+        KNOWN,
+        HASDAMAGE,
+        NODAMAGE,
+    }
 }

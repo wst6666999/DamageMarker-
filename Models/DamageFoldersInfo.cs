@@ -12,28 +12,57 @@ namespace DamageMaker.Models
     public partial class DamageFoldersInfo:ObservableObject
     {
         [ObservableProperty]
-        private int serialNumber;//序号
-        public string FolderName { get; set;}
-        public DateTime CreatTime { get; set;}
-        public bool HasDamage { get; set;}
-        public int PngCount { get; set;}
-        public int DamagePngCount { get; set;}
-
-        public bool HasDocx { get; set;}
-        public bool HasMileage { get; set;}
-        public bool HasFolderInfo { get; set;}
-        public bool IsReadOnly { get=>!HasFolderInfo;}
+        private int _serialNumber; // 序号
 
         [ObservableProperty]
-        private string remark = string.Empty;
+        private string _folderName = string.Empty;
 
+        [ObservableProperty]
+        private DateTime _creatTime;
 
+        [ObservableProperty]
+        private bool _hasDamage;
+
+        [ObservableProperty]
+        private int _pngCount;
+
+        [ObservableProperty]
+        private int _damagePngCount;
+
+        [ObservableProperty]
+        private bool _hasDocx;
+
+        [ObservableProperty]
+        private string _instruments = string.Empty;
+
+        [ObservableProperty]
+        private int _suspectedDamageCount;
+
+        [ObservableProperty]
+        private string _remark = string.Empty;
+
+        [ObservableProperty]
+        private string _selectedLineType;
+
+        [ObservableProperty]
+        private string _selectedUpOrDown;
+
+        [ObservableProperty]
+        private int _cycleNumber;
+
+        [ObservableProperty]
+        private string _selectedRailType;
+
+        [ObservableProperty]
+        private string _serialNumber1;
+
+        [ObservableProperty]
+        private DateTime? _lastOpenTime;
 
         partial void OnRemarkChanged(string? oldValue, string newValue)
         {
             try
             {
-                Console.WriteLine("正在保存备注到数据库...");
                 var sqlHelper = new SQLHelper(Settings.Default.SqlPath);
               
                         sqlHelper.UpdateFolderRemark(FolderName,newValue);
@@ -41,7 +70,6 @@ namespace DamageMaker.Models
             catch (Exception ex)
             {
                 HandyControl.Controls.MessageBox.Error("保存备注失败：" + ex.Message);
-                
             }
         }
 

@@ -15,6 +15,7 @@ using System.Text;
 using System.Threading.Tasks;
 using DamageMaker.Message;
 
+
 namespace DamageMaker.ViewModels
 {
     //
@@ -233,5 +234,49 @@ namespace DamageMaker.ViewModels
                 AfterCount: HideTestTrackCountAfter
             ));
         }
+
+       
+
+      
+            [ObservableProperty]
+            private float limitedSpeed;   // 普通速度值
+
+            [ObservableProperty]
+            private float throughWeldSpeed;   // 焊缝速度值
+
+            [RelayCommand]
+            private void ChangeLimitedSpeed()
+            {
+                if (LimitedSpeed <= 0)
+                {
+                    Growl.Warning("速度值必须大于 0");
+                    return;
+                }
+
+                // 发送消息给需要的地方
+                WeakReferenceMessenger.Default.Send(new SpeedSettingMessage(LimitedSpeed, ThroughWeldSpeed));
+
+                Growl.Success($"已应用速度设置：{LimitedSpeed} KM/H, 焊缝 {ThroughWeldSpeed} KM/H");
+            }
+
+            [ObservableProperty]
+            private float limitedLost;
+
+            [RelayCommand]
+            private void ChangeLimitedLost()
+            {
+                if (limitedLost <= 0)
+                {
+                Growl.Warning("值必须大于 0");
+                return;
+                }
+
+                // 发送消息给需要的地方
+                WeakReferenceMessenger.Default.Send(new LostSettingMessage(limitedLost));
+
+                Growl.Success($"已应用失底波设置：{limitedLost} M");
+            }
+
+
     }
 }

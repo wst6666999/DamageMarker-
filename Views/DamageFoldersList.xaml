@@ -9,10 +9,9 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:vm="clr-namespace:DamageMaker.ViewModels"
     x:Name="FoldersDataGrid"
-    
     Title="DamageFoldersList"
-    Width="1400"
-    Height="650"
+    Width="1632"
+    Height="795"
     d:DataContext="{d:DesignInstance Type=vm:DamageFoldersListViewModel}"
     mc:Ignorable="d">
     <Window.Background>
@@ -57,104 +56,211 @@
             <Setter Property="FontSize" Value="14" />
             <Setter Property="Padding" Value="10,5" />
             <Setter Property="Margin" Value="5" />
-
         </Style>
     </Window.Resources>
     <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="965*"/>
-            <ColumnDefinition Width="30*"/>
-            <ColumnDefinition Width="18*"/>
-            <ColumnDefinition Width="369*"/>
-            <ColumnDefinition Width="13*"/>
-            <ColumnDefinition Width="5*"/>
-        </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
-        <DataGrid
-            x:Name="folderList"
-            Grid.Row="0"
-            AutoGenerateColumns="False"
-            CanUserAddRows="False"
-            ItemsSource="{Binding DamageFolders}"
-            ScrollViewer.VerticalScrollBarVisibility="Visible"
-            
-            SelectedIndex="{Binding SelectedIndex}"
-            SelectionChanged="folderList_SelectionChanged"
-            SelectionMode="Extended" Grid.ColumnSpan="6" Margin="0,0,0,58" Grid.RowSpan="2">
-            <DataGrid.RowHeaderTemplate>
-                <DataTemplate>
-                    <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, RelativeSource={RelativeSource AncestorType=DataGridRow}}" />
-                </DataTemplate>
-            </DataGrid.RowHeaderTemplate>
-            <i:Interaction.Triggers>
-                <i:EventTrigger EventName="MouseDoubleClick">
-                    <i:InvokeCommandAction Command="{Binding DoubleClickDamageFolderCommand}" CommandParameter="{Binding ElementName=folderList, Path=SelectedItem}" />
-                </i:EventTrigger>
-            </i:Interaction.Triggers>
-            <DataGrid.Columns>
-                <DataGridTextColumn
-                    Binding="{Binding SerialNumber}"
-                    ElementStyle="{StaticResource CenterCellStyle}"
-                    Header="序号"
-                    IsReadOnly="True" />
-                <DataGridTextColumn
-                    Width="300"
-                    Binding="{Binding FolderName}"
-                    ElementStyle="{StaticResource CenterCellStyle}"
-                    Header="文件名"
-                    IsReadOnly="True" />
-                <DataGridTextColumn
-                    Binding="{Binding HasDamage, Converter={StaticResource Boolean2StringConverter}, ConverterParameter='否;是'}"
-                    ElementStyle="{StaticResource CenterCellStyle}"
-                    Header="是否有伤损数据"
-                    IsReadOnly="True" />
-                <DataGridTextColumn
-                    Binding="{Binding CreatTime}"
-                    ElementStyle="{StaticResource CenterCellStyle}"
-                    Header="创建日期"
-                    IsReadOnly="True"
-                    SortDirection="Descending" />
-                <DataGridTextColumn
-                    Binding="{Binding PngCount}"
-                    ElementStyle="{StaticResource CenterCellStyle}"
-                    Header="捕获图片数量"
-                    IsReadOnly="True" />
-                <DataGridTextColumn
-                    Binding="{Binding DamagePngCount}"
-                    ElementStyle="{StaticResource CenterCellStyle}"
-                    Header="伤损图片数量"
-                    IsReadOnly="True" />
-                <DataGridTextColumn
-                    Binding="{Binding HasDocx, Converter={StaticResource Boolean2StringConverter}, ConverterParameter='否;是'}"
-                    ElementStyle="{StaticResource CenterCellStyle}"
-                    Header="是否有报表数据"
-                    IsReadOnly="True" />
-                <DataGridTextColumn
-                    Binding="{Binding HasFolderInfo, Converter={StaticResource Boolean2StringConverter}, ConverterParameter='否;是'}"
-                    IsReadOnly="{Binding  DataContext.HasFolderInfo,ElementName=folderList}"
-                    ElementStyle="{StaticResource CenterCellStyle}"
-                    Header="是否有文件信息数据"
-                    />
-                <DataGridTextColumn
-                    Header="备注"
-                    IsReadOnly="False"
-                    Binding="{Binding Remark,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"
-                    ElementStyle="{StaticResource CenterCellStyle}"
-                    />
-            </DataGrid.Columns>
-        </DataGrid>
 
-        <UniformGrid
+        <!-- 主内容区域 -->
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="909*" />
+                <ColumnDefinition Width="100*" />
+                <ColumnDefinition Width="92*" />
+                <ColumnDefinition Width="27*" />
+                <ColumnDefinition Width="357*" />
+                <ColumnDefinition Width="Auto" MinWidth="219.999" />
+            </Grid.ColumnDefinitions>
+
+            <!-- DataGrid -->
+            <DataGrid
+                x:Name="folderList"
+                Grid.Column="0"
+                Grid.ColumnSpan="5"
+                AutoGenerateColumns="False"
+                CanUserAddRows="False"
+                ItemsSource="{Binding DamageFolders}"
+                ScrollViewer.VerticalScrollBarVisibility="Visible"
+                ScrollViewer.CanContentScroll="True"
+                EnableRowVirtualization="True"
+                EnableColumnVirtualization="True"
+                VirtualizingPanel.IsVirtualizing="True"
+                VirtualizingPanel.VirtualizationMode="Recycling"
+                SelectedIndex="{Binding SelectedIndex}"
+                SelectionChanged="folderList_SelectionChanged"
+                SelectionMode="Extended">
+                <DataGrid.RowHeaderTemplate>
+                    <DataTemplate>
+                        <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, RelativeSource={RelativeSource AncestorType=DataGridRow}}" />
+                    </DataTemplate>
+                </DataGrid.RowHeaderTemplate>
+                <i:Interaction.Triggers>
+                    <i:EventTrigger EventName="MouseDoubleClick">
+                        <i:InvokeCommandAction Command="{Binding DoubleClickDamageFolderCommand}" CommandParameter="{Binding ElementName=folderList, Path=SelectedItem}" />
+                    </i:EventTrigger>
+                </i:Interaction.Triggers>
+                <DataGrid.Columns>
+                    <DataGridTextColumn
+                        Binding="{Binding SerialNumber}"
+                        ElementStyle="{StaticResource CenterCellStyle}"
+                        Header="序号"
+                        IsReadOnly="True" />
+                    <DataGridTextColumn
+                        Width="220"
+                        Binding="{Binding FolderName}"
+                        ElementStyle="{StaticResource CenterCellStyle}"
+                        Header="文件名"
+                        IsReadOnly="True" />
+                    <DataGridTextColumn
+                        Header="仪器类型"
+                        IsReadOnly="True"
+                        ElementStyle="{StaticResource CenterCellStyle}"
+                        Binding="{Binding Instruments}" />
+                    <DataGridTextColumn
+                        Width="150"
+                        Binding="{Binding SelectedLineType}"
+                        ElementStyle="{StaticResource CenterCellStyle}"
+                        Header="线别"
+                        IsReadOnly="True" />
+                    
+                    <DataGridTextColumn
+                        Binding="{Binding SerialNumber1}"
+                        ElementStyle="{StaticResource CenterCellStyle}"
+                        Header="仪器串号"
+                        Width="100"
+                        IsReadOnly="True" />
+                    
+                    <DataGridTextColumn
+                        Width="70"
+                        Binding="{Binding CycleNumber}"
+                        ElementStyle="{StaticResource CenterCellStyle}"
+                        Header="周期号"
+                        IsReadOnly="True" />
+                    <DataGridTextColumn
+                        Header="疑似伤损数量"
+                        IsReadOnly="True"
+                        ElementStyle="{StaticResource CenterCellStyle}"
+                        Binding="{Binding SuspectedDamageCount}" />
+                    <DataGridTextColumn
+                        Binding="{Binding DamagePngCount}"
+                        ElementStyle="{StaticResource CenterCellStyle}"
+                        Header="标记图片数量"
+                        IsReadOnly="True" />
+                    <DataGridTextColumn
+                        Binding="{Binding PngCount}"
+                        ElementStyle="{StaticResource CenterCellStyle}"
+                        Header="捕获图片数量"
+                        IsReadOnly="True" />
+                    <DataGridTextColumn
+                        Binding="{Binding HasDocx, Converter={StaticResource Boolean2StringConverter}, ConverterParameter='否;是'}"
+                        ElementStyle="{StaticResource CenterCellStyle}"
+                        Header="是否有报表数据"
+                        IsReadOnly="True" />
+                    <DataGridTextColumn
+                        Binding="{Binding CreatTime}"
+                        ElementStyle="{StaticResource CenterCellStyle}"
+                        Header="创建日期"
+                        IsReadOnly="True"
+                        SortDirection="Descending" />
+                    <DataGridTextColumn
+                        Header="备注"
+                        IsReadOnly="False"
+                        Binding="{Binding Remark, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                        ElementStyle="{StaticResource CenterCellStyle}" />
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <!-- 搜索框区域 - 放在备注列之后 -->
+            <StackPanel
+                Grid.Column="5"
+                Orientation="Vertical"
+                Margin="15,50,15,0"
+                VerticalAlignment="Top"
+                Height="49">
+                <TextBlock
+                    Text="搜索历史文件"
+                    FontFamily="微软雅黑"
+                    FontSize="12"
+                    Margin="0,0,0,5"
+                    Foreground="#666666" />
+                <hc:SearchBar
+                    hc:InfoElement.TitlePlacement="Left"
+                    hc:InfoElement.TitleWidth="0"
+                    Command="{Binding SearchHistoricalFileCommand}"
+                    CommandParameter="{Binding Text, RelativeSource={RelativeSource Self}}"
+                    Style="{StaticResource SearchBarPlus}"
+                    Text="{Binding SearchHistoricalFileText}" />
+            </StackPanel>
+        </Grid>
+
+        <!-- 分页区域 -->
+        <StackPanel
             Grid.Row="1"
+            Margin="10,8,5,0"
+            HorizontalAlignment="Center"
+            Orientation="Horizontal">
+            <Button
+                Width="80"
+                Command="{Binding FirstPageCommand}"
+                Content="首页" />
+            <Button
+                Width="80"
+                Command="{Binding PreviousPageCommand}"
+                Content="上一页" />
+            <TextBlock
+                MinWidth="260"
+                Margin="15,0"
+                VerticalAlignment="Center"
+                FontFamily="微软雅黑"
+                FontSize="14"
+                Text="{Binding PageInfo}"
+                TextAlignment="Center" />
+            <Button
+                x:Name="SelectedFoldersMenuButton"
+                Width="130"
+                Margin="5,0,15,0"
+                VerticalAlignment="Center"
+                Content="{Binding SelectedCountText}"
+                Click="SelectedFoldersMenuButton_Click"
+                Tag="{Binding}">
+                <Button.ContextMenu>
+                    <ContextMenu ItemsSource="{Binding PlacementTarget.Tag.SelectedFolders, RelativeSource={RelativeSource Self}}">
+                        <ContextMenu.ItemContainerStyle>
+                            <Style TargetType="{x:Type MenuItem}">
+                                <Setter Property="Header" Value="{Binding FolderName}" />
+                                <EventSetter Event="Click" Handler="SelectedFolderMenuItem_Click" />
+                            </Style>
+                        </ContextMenu.ItemContainerStyle>
+                    </ContextMenu>
+                </Button.ContextMenu>
+            </Button>
+            <Button
+                Width="80"
+                Command="{Binding NextPageCommand}"
+                Content="下一页" />
+            <Button
+                Width="80"
+                Command="{Binding LastPageCommand}"
+                Content="尾页" />
+        </StackPanel>
+
+        <!-- 按钮区域 -->
+        <UniformGrid
+            Grid.Row="2"
             Margin="10,10,5,10"
-            Columns="5" Grid.ColumnSpan="5">
+            Columns="7">
             <Button
                 Command="{Binding OpenDocxCommand}"
                 CommandParameter="{Binding ElementName=folderList, Path=SelectedItem}"
                 Content="打开Word报告" />
+            <Button
+                Command="{Binding ExportReportCommand}"
+                CommandParameter="{Binding ElementName=folderList, Path=SelectedItem}"
+                Content="导出Word报告" />
             <Button Command="{Binding ExportExcelCommand}" Content="导出Excel" />
             <Button
                 Command="{Binding DeleteFoldersCommand}"
@@ -169,17 +275,5 @@
                 CommandParameter="Excel文件夹"
                 Content="打开Excel目录" />
         </UniformGrid>
-        <hc:SearchBar 
-            HorizontalAlignment="Left" 
-            Margin="228,10,0,0" 
-            VerticalAlignment="Top" 
-            Width="129"
-            hc:InfoElement.TitlePlacement="Left"
-            hc:InfoElement.TitleWidth="12"
-            Command="{Binding SearchHistoricalFileCommand}"
-            CommandParameter="{Binding Text, RelativeSource={RelativeSource Self}}"
-            Style="{StaticResource SearchBarPlus}"
-            Text="{Binding SearchHistoricalFileText}" Grid.Column="3" 
-           />
     </Grid>
 </Window>

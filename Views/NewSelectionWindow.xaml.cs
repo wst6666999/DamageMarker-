@@ -34,6 +34,5 @@ namespace DamageMarker.Views
             selectionBorder.Width = Math.Abs(e.GetPosition(this).X - App.mouseStartX);
             selectionBorder.Height = Math.Abs(e.GetPosition(this).Y - App.mouseStartY);
         }
-
     }
 }

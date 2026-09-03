@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -166,7 +167,7 @@ namespace DamageMaker.Views
         {
             OverlayCanvas.Children.Clear();
             _labelPositions.Clear();
-            _mergedDamageMap.Clear(); // 清空合并记录
+            _mergedDamageMap.Clear();
 
             if (DamagePoints == null || SourceImage == null)
                 return;
@@ -178,30 +179,32 @@ namespace DamageMaker.Views
             {
                 var point = mergedPoints[i];
 
-                // 检查是否是纯鱼鳞伤（单个或全部合并ID都是鱼鳞伤）
+                // 检查是否是纯鱼鳞伤
                 bool isPureFishScale = IsPureFishScaleDamage(point, i);
                 if (isPureFishScale && HideFishScale)
                 {
-                    continue; // 跳过纯鱼鳞伤
+                    continue;
                 }
 
                 float x = point[0], y = point[1];
                 float width = point[2], height = point[3];
-                float similarity = point[5] < 0.5f ? 0.5f : point[5];
 
-                // 计算圆角半径（相似度越低，圆角越大）
-                double cornerRadiusX = width / 2 * (1 - similarity);
-                double cornerRadiusY = height / 2 * (1 - similarity);
+                // 修复：确保相似度在有效范围内
+                float similarity = Math.Max(0, Math.Min(1, point[5])); // 限制在0-1之间
+
+                // 修复：安全计算圆角半径
+                double cornerRadiusX = CalculateSafeCornerRadius(width, similarity);
+                double cornerRadiusY = CalculateSafeCornerRadius(height, similarity);
 
                 if (Settings.Default.IsHideNormalMarker)
                 {
-                    //Console.WriteLine("当前设置为隐藏正常类标记。");
-                    //不显示正常类
-                    if (DataConversion.DamageIdToBrush(point[4]) == Brushes.Green || DataConversion.DamageIdToBrush(point[4]) == Brushes.YellowGreen)
+                    var normalCategoryIds = new HashSet<float> { 0, 1, 2, 3, 4, 11, 12, 22, 24, 28 };
+                    if (normalCategoryIds.Contains(point[4]))
                     {
                         continue;
                     }
                 }
+
                 // 创建标记框
                 var border = new Border
                 {
@@ -210,21 +213,37 @@ namespace DamageMaker.Views
                     BorderThickness = new Thickness(4),
                     BorderBrush = GetDamageBrush(point[4], similarity),
                     CornerRadius = new CornerRadius(
-                        cornerRadiusX,  // 左上角
-                        cornerRadiusX,  // 右上角
-                        cornerRadiusY,  // 右下角
-                        cornerRadiusY), // 左下角
+                        Math.Max(0, cornerRadiusX),  // 确保非负
+                        Math.Max(0, cornerRadiusX),
+                        Math.Max(0, cornerRadiusY),
+                        Math.Max(0, cornerRadiusY)),
                     Background = Brushes.Transparent
                 };
                 Canvas.SetLeft(border, x);
                 Canvas.SetTop(border, y);
                 OverlayCanvas.Children.Add(border);
 
-                // 添加防重叠标签
                 AddLabelWithAntiOverlap(i, point, x, y, width, height);
             }
         }
 
+        /// <summary>
+        /// 安全计算圆角半径，防止负值和过大值
+        /// </summary>
+        private double CalculateSafeCornerRadius(float dimension, float similarity)
+        {
+            // 确保相似度在0-1范围内
+            float safeSimilarity = Math.Max(0, Math.Min(1, similarity));
+
+            // 确保维度有效
+            if (dimension <= 0) return 0;
+
+            // 计算圆角半径，确保非负
+            double radius = dimension / 2 * (1 - safeSimilarity);
+
+            // 限制圆角半径不超过维度的一半
+            return Math.Max(0, Math.Min(radius, dimension / 2));
+        }
         public enum MergeStrategy
         {
             Union,      // 取所有框的并集（最大范围）

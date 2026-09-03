@@ -17,6 +17,27 @@
 
             <!-- 自定义颜色资源 -->
             <SolidColorBrush x:Key="LightBackgroundBrush" Color="#FAFAFA"/>
+            <!-- 颜色资源 -->
+            <Color x:Key="PrimaryColor">#FF4285F4</Color>
+            <Color x:Key="SecondaryColor">#FFF5F5F5</Color>
+            <Color x:Key="BorderColor">#FFE0E0E0</Color>
+            <Color x:Key="TextColor">#FF212121</Color>
+            <Color x:Key="SecondaryTextColor">#FF757575</Color>
+            <Color x:Key="LightAccentColor">#FFE8F0FE</Color>
+
+            <!-- 画刷资源 -->
+            <SolidColorBrush x:Key="PrimaryAccentBrush" Color="{StaticResource PrimaryColor}" />
+            <SolidColorBrush x:Key="SecondaryBackgroundBrush" Color="{StaticResource SecondaryColor}" />
+            <SolidColorBrush x:Key="PrimaryBorderBrush" Color="{StaticResource BorderColor}" />
+            <SolidColorBrush x:Key="PrimaryTextBrush" Color="{StaticResource TextColor}" />
+            <SolidColorBrush x:Key="SecondaryTextBrush" Color="{StaticResource SecondaryTextColor}" />
+            <SolidColorBrush x:Key="LightAccentBrush" Color="{StaticResource LightAccentColor}" />
+
+            <!-- 备用资源（如果上面的资源找不到） -->
+            <SolidColorBrush x:Key="FallbackBackgroundBrush" Color="#FFF5F5F5" />
+            <SolidColorBrush x:Key="FallbackBorderBrush" Color="#FFE0E0E0" />
+            <SolidColorBrush x:Key="FallbackTextBrush" Color="#FF212121" />
+
         </ResourceDictionary>
 
     </Application.Resources>

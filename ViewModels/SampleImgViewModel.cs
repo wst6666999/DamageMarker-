@@ -28,6 +28,7 @@ using DamageMarker.Views;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.EMMA;
 using HandyControl.Controls;
+using Microsoft.Data.Sqlite;
 using HandyControl.Tools.Extension;
 using static DamageMaker.DamageDataProcessing.DataConversion;
 
@@ -42,6 +43,11 @@ namespace DamageMaker.ViewModels
         internal int currentImgIndex = 0; //当前图片的索引
         private BoxSelectedControl boxSelecteObject; //当前选择的框
         public string ImgFullPath; //图片名称
+
+        private BoxSelectedControl? currentHighlightedBox = null;
+
+        [ObservableProperty]
+        string imageFileName;
 
         [ObservableProperty]
         int leftLineX = 0;
@@ -92,7 +98,7 @@ namespace DamageMaker.ViewModels
 
         public SampleImgViewModel()
         {
-            IsLineVisibility=Settings.Default.IsDistictRepeat ? Visibility.Visible : Visibility.Collapsed;
+            IsLineVisibility = Settings.Default.IsDistictRepeat ? Visibility.Visible : Visibility.Collapsed;
 
             if (MainWindowViewModel.NeedSavedInfo != null)
             {
@@ -103,7 +109,7 @@ namespace DamageMaker.ViewModels
             var CategorysTemp = Enum.GetValues(typeof(DamageCategory))
                 .Cast<DamageCategory>()
                 .ToList();
-                Categorys = new ObservableCollection<DamageCategory>(CategorysTemp);
+            Categorys = new ObservableCollection<DamageCategory>(CategorysTemp);
 
         }
         [RelayCommand]
@@ -126,7 +132,9 @@ namespace DamageMaker.ViewModels
             int cruuentImgIndex,
             string imgFullPath,
             SqlImgInfo? sqlImgInfo
-        ): this()
+
+
+        ) : this()
         {
             this.currentImgIndex = cruuentImgIndex;
             canvasWidth = Width;
@@ -137,24 +145,29 @@ namespace DamageMaker.ViewModels
             this.ImgFullPath = imgFullPath;
             this.sqlImgInfo = sqlImgInfo;
             int count = 0;
+            ImageFileName = Path.GetFileName(imgFullPath);
             //把面积大的放在下面,
             this.damagePoints = DamagePoints.OrderByDescending(x => x[2] * x[3]).ToList();
             foreach (var point in this.damagePoints)
             {
-                boxedStack.Add(
-                    new BoxSelectedControl()
-                    {
-                        RectColor = DamageIdToBrush(point[4]),
-                        RectX = (int)point[0],
-                        RectY = (int)point[1],
-                        RectWidth = (int)point[2],
-                        RectHeight = (int)point[3],
-                        RectRadiusX = point[2] / 2 * (1 - point[5]),
-                        RectRadiusY = point[3] / 2 * (1 - point[5]),
-                        RectOpacity = point[5],
-                        ButtonContent = DamageIdToDamageName(point[4]) + " " + count,
-                    }
-                );
+                var box = new BoxSelectedControl()
+                {
+                    RectColor = DamageIdToBrush(point[4]),
+                    RectX = (int)point[0],
+                    RectY = (int)point[1],
+                    RectWidth = (int)point[2],
+                    RectHeight = (int)point[3],
+                    RectRadiusX = point[2] / 2 * (1 - point[5]),
+                    RectRadiusY = point[3] / 2 * (1 - point[5]),
+                    RectOpacity = point[5],
+                    ButtonContent = DamageIdToDamageName(point[4]) + " " + count,
+
+                    // 关键：绑定这个框对应的原始 damagePoint
+                    Tag = point
+                };
+
+                boxedStack.Add(box);
+
                 count++;
             }
         }
@@ -167,7 +180,7 @@ namespace DamageMaker.ViewModels
             if (!string.IsNullOrEmpty(O.ButtonContent))
             {
                 var cate = Regex.Replace(O.ButtonContent, @"\d+$", "");//去除末尾的数字
-                cate=cate.Replace("(", "_").Replace(")","");
+                cate = cate.Replace("(", "_").Replace(")", "");
 
                 Result = (DamageCategory)Enum.Parse(typeof(DamageCategory), cate);
             }
@@ -186,145 +199,434 @@ namespace DamageMaker.ViewModels
 
 
         [RelayCommand]
-       async void Modify()
+        async void Modify()
         {
+            Console.WriteLine("==== 进入 Modify ====");
+            Console.WriteLine($"boxSelecteObject 是否为空: {boxSelecteObject == null}");
+
             IsNotSave = false;
+
             if (boxSelecteObject != null)//进入修改流程
             {
+                Console.WriteLine($"修改前颜色: {boxSelecteObject.RectColor}");
+                Console.WriteLine($"修改前内容: {boxSelecteObject.ButtonContent}");
+                Console.WriteLine($"坐标: ({boxSelecteObject.RectX}, {boxSelecteObject.RectY})");
+
+                // 1. 修改当前框 UI
                 boxSelecteObject.ButtonContent = Result.ToString();
                 boxSelecteObject.RectColor = DamageIdToBrush((float)(int)Result);
-                boxSelecteObject.RectColor = DamageIdToBrush((float)Result);
+
+                // 关键：这些属性必须是 ObservableProperty，用来强制触发框体重绘
+                boxSelecteObject.RectOpacity = 1;
+                boxSelecteObject.RectRadiusX = 0;
+                boxSelecteObject.RectRadiusY = 0;
+
+                Console.WriteLine($"修改后颜色: {boxSelecteObject.RectColor}");
+                Console.WriteLine($"修改后内容: {boxSelecteObject.ButtonContent}");
+
+                // 2. 等待 WPF 真正完成渲染
+                await System.Windows.Application.Current.Dispatcher.InvokeAsync(
+                    () => { },
+                    System.Windows.Threading.DispatcherPriority.Render
+                );
+
+                // 3. 修改内存 damagePoints
                 damagePoints = damagePoints
-               .Select(x =>
-               {
-                   if (x[0] == boxSelecteObject.RectX && x[1] == boxSelecteObject.RectY)
-                   {
-                       x[4] = (float)Result;
-                       x[5] = 1;
-                   }
-                   return x;
-               })
-              .ToList();
-            }
-            //if ((int)Result == 46)//如果选择为厂焊
-            //{
-            //    //var dialog = Dialog.Show<MileageInputDialog, MileageInputDialogViewModel>();
-            //    var dialog = Dialog.Show<MileageInputDialog>().Initialize<MileageInputDialogViewModel>(x => { 
-
-            //      var  FileName = Path.GetFileNameWithoutExtension(ImgFullPath);
-            //        var index = FileName.IndexOf("_");
-            //        if (index > 0) x.Mileage=FileName.Substring(0, index);               
-            //    });
-            //    var result = await dialog.GetResultAsync<string>();
-            //    if (!string.IsNullOrEmpty(result))
-            //    {
-            //        // 1. 读取图片文件为 byte[]
-            //        byte[] imageBytes = null;
-            //        if (File.Exists(ImgFullPath))
-            //        {
-            //            imageBytes = File.ReadAllBytes(ImgFullPath);
-            //            // 2. 更新数据库中的 ImageData 字段
-            //            if (sqlImgInfo != null)
-            //            {
-            //                sqlImgInfo.ImageData = imageBytes;
-            //                DataAccess.UpdateImageData(MainWindow.MainVm.SqlImgInfos, ImgFullPath, imageBytes);
-            //            }
-            //        }
-            //        DataAccess.AppendImageRemark(sqlImgInfo, ImgFullPath, $"当前图片存在厂焊,里程数为{result}");
-            //        HandyControl.Controls.MessageBox.Info($"输入的里程数为:{result}");
-            //        // 伤损信息转为字符串
-            //        string damageStr = "";
-            //        var data = MainWindow.MainVm.DamageDataList.Where(x => Path.GetFileName(x.Url) == Path.GetFileName(ImgFullPath)).FirstOrDefault();
-            //        if (data != null)
-            //        {
-            //            data.DamagePoint = damagePoints.ToArray();
-            //        }
-            //        if (damagePoints != null && damagePoints.Count > 0)
-            //        {
-            //            damageStr = string.Join(";", damagePoints.Select(arr => string.Join(",", arr)));
-            //        }
-            //        DataAccess.AppendImageRemark(sqlImgInfo, ImgFullPath, $"，伤损点:{damageStr}");
-            //        HandyControl.Controls.MessageBox.Info($"伤损点: {damageStr}");
-            //        // 获取作业区间
-            //        string workRange = "";
-            //        var railInfo = MainWindowViewModel.NeedSavedInfo?.RailWayInfo;
-            //        DataAccess.AppendImageRemark(sqlImgInfo, ImgFullPath, $"，作业区间:{railInfo?.WorkSection ?? "未知"}");
-            //        HandyControl.Controls.MessageBox.Info($"作业区间: {railInfo?.WorkSection ?? "未知"}");
-
-            //    }
-            //}
-            if ((int)Result == 46) // 如果选择为厂焊
-            {
-                var dialog = Dialog.Show<MileageInputDialog>().Initialize<MileageInputDialogViewModel>(x => {
-                    var FileName = Path.GetFileNameWithoutExtension(ImgFullPath);
-                    var index = FileName.IndexOf("_");
-                    if (index > 0) x.Mileage = FileName.Substring(0, index);
-                });
-                var result = await dialog.GetResultAsync<string>();
-
-                if (!string.IsNullOrEmpty(result))
-                {
-                    // 伤损信息转为字符串
-                    string damageStr = "";
-                    if (damagePoints != null && damagePoints.Count > 0)
+                    .Select(x =>
                     {
-                        damageStr = string.Join(";", damagePoints.Select(arr => string.Join(",", arr)));
-                    }
-                    var railInfo = MainWindowViewModel.NeedSavedInfo?.RailWayInfo;
-                    string workRange = railInfo?.WorkSection ?? "未知";
-
-                    // 组装remark
-                    string remark = $"当前图片存在厂焊，里程数为{result}，伤损点:{damageStr}，作业区间:{workRange}";
-
-                    // 读取图片文件为 byte[]
-                    byte[] imageBytes = File.ReadAllBytes(ImgFullPath.OutReplaceInString());
-
-                    Console.WriteLine($"厂焊图片的路径:{ImgFullPath.OutReplaceInString()}");
-                    // 更新数据库和内存
-                    DataAccess.UpdateImageRemark(MainWindow.MainVm.SqlImgInfos, ImgFullPath, remark);
-                    DataAccess.UpdateImageData(MainWindow.MainVm.SqlImgInfos, ImgFullPath, imageBytes);
-
-                    //重新加载项目总览
-                    MainWindow.MainVm.LoadProjectOverview();
-                    //更新result.json
-                    if (MainWindow.MainVm.DamageDataList != null)
-                    {
-                        var data = MainWindow.MainVm.DamageDataList
-                            .FirstOrDefault(x => Path.GetFileName(x.Url) == Path.GetFileName(ImgFullPath));
-                        if (data != null)
+                        if (x[0] == boxSelecteObject.RectX && x[1] == boxSelecteObject.RectY)
                         {
-                            data.DamagePoint = damagePoints.ToArray();
+                            x[4] = (float)Result;
+                            x[5] = 1;
                         }
+                        return x;
+                    })
+                    .ToList();
+
+                // 4. 更新数据库中对应坐标的损伤类型
+                if (sqlImgInfo != null)
+                {
+                    using (var sqlHelper = new SQLHelper(Settings.Default.SqlPath))
+                    {
+                        await sqlHelper.UpdateDamageAnnotationAsync(
+                            sqlImgInfo.ImgId,
+                            boxSelecteObject.RectX,
+                            boxSelecteObject.RectY,
+                            (float)Result
+                        );
                     }
-                    AboutJson.SaveJson<List<DamageData>>(MainWindow.MainVm.DamageDataList, Path.Combine(Settings.Default.InPath, MainWindow.MainVm.ImgFolderName), "result.json");
-                    HandyControl.Controls.MessageBox.Info($"输入的里程数为:{result}");
-                    //HandyControl.Controls.MessageBox.Info($"伤损点: {damageStr}");
-                    HandyControl.Controls.MessageBox.Info($"作业区间: {workRange}");
                 }
+            }
+            else
+            {
+                Console.WriteLine("没有进入修改分支，因为 boxSelecteObject == null");
+            }
+
+            var dialog = Dialog.Show<MileageInputDialog>().Initialize<MileageInputDialogViewModel>(x =>
+            {
+                var FileName = Path.GetFileNameWithoutExtension(ImgFullPath);
+                var index = FileName.IndexOf("_");
+                if (index > 0) x.Mileage = FileName.Substring(0, index);
+            });
+
+            var result = await dialog.GetResultAsync<string>();
+
+            if (!string.IsNullOrEmpty(result))
+            {
+                // 保存里程到数据库
+                if (sqlImgInfo != null)
+                {
+                    sqlImgInfo.Mileage = result;
+                    using (var sqlHelper = new SQLHelper(Settings.Default.SqlPath))
+                    {
+                        await sqlHelper.UpdateSqlImgInfoAsync(sqlImgInfo);
+                    }
+                }
+            }
+
+            // 5. 不管里程有没有输入，都同步 result.json
+            if (MainWindow.MainVm.DamageDataList != null)
+            {
+                var data = MainWindow.MainVm.DamageDataList
+                    .FirstOrDefault(x => Path.GetFileName(x.Url) == Path.GetFileName(ImgFullPath));
+
+                if (data != null)
+                {
+                    data.DamagePoint = damagePoints.ToArray();
+                }
+
+                AboutJson.SaveJson<List<DamageData>>(
+                    MainWindow.MainVm.DamageDataList,
+                    Path.Combine(Settings.Default.InPath, MainWindow.MainVm.ImgFolderName),
+                    "result.json"
+                );
+
+                MainWindow.MainVm.damagePoints = damagePoints.ToArray();
             }
 
             if (string.IsNullOrEmpty(OutImgPath))
             {
                 OutImgPath = this.ImgFullPath.InReplaceOutString();
             }
+
+            // 6. 再等一次渲染，避免关闭窗口截图时还是旧颜色
+            await System.Windows.Application.Current.Dispatcher.InvokeAsync(
+                () => { },
+                System.Windows.Threading.DispatcherPriority.Render
+            );
+
             boxSelecteObject = null; //防止新增框选的时候，误修改上一个对象
             CloseAction?.Invoke();
 
             Console.WriteLine(Result.ToString());
-
+            MainWindow.MainVm.LoadProjectOverview();
         }
 
+        public async Task<bool> AutoModifyTargetBoxToNormalWeldAsync()
+        {
+            const int NORMAL_WELD_ID = 2; // 普通焊缝
+            int[] targetIds = { 52 };
+
+            if (damagePoints == null || damagePoints.Count == 0)
+                return false;
+
+            var targetPoint = damagePoints
+                .FirstOrDefault(x => x.Length >= 5 && targetIds.Contains((int)x[4]));
+
+            if (targetPoint == null)
+                return false;
+
+            Result = (DamageCategory)NORMAL_WELD_ID;
+
+            // 1. 改之前，先把旧 id 和坐标存到 Images 表，供再次点击“无伤”时回退
+            if (sqlImgInfo != null)
+            {
+                using var sqlHelper = new SQLHelper(Settings.Default.SqlPath);
+                sqlHelper.EnsureConnectionOpen();
+
+                string sql = @"
+                    UPDATE Images
+                    SET AutoModifyOldDamageType = @OldType,
+                        AutoModifyX = @X,
+                        AutoModifyY = @Y
+                    WHERE ImageId = @ImageId";
+
+                using var cmd = new SqliteCommand(sql, sqlHelper.Connection);
+                cmd.Parameters.AddWithValue("@OldType", (int)targetPoint[4]);
+                cmd.Parameters.AddWithValue("@X", targetPoint[0]);
+                cmd.Parameters.AddWithValue("@Y", targetPoint[1]);
+                cmd.Parameters.AddWithValue("@ImageId", sqlImgInfo.ImgId);
+                cmd.ExecuteNonQuery();
+            }
+
+            // 2. 改内存数据：52 -> 2
+            targetPoint[4] = NORMAL_WELD_ID;
+            targetPoint[5] = 1;
+
+            // 直接通过引用找到对应框
+            var targetBox = BoxedStack
+                .FirstOrDefault(b => ReferenceEquals(b.Tag, targetPoint));
+
+            if (targetBox != null)
+            {
+                targetBox.ButtonContent = DamageIdToDamageName(NORMAL_WELD_ID);
+                targetBox.RectColor = DamageIdToBrush(NORMAL_WELD_ID);
+                targetBox.RectOpacity = 1;
+                targetBox.RectRadiusX = 0;
+                targetBox.RectRadiusY = 0;
+            }
+
+            await System.Windows.Application.Current.Dispatcher.InvokeAsync(
+                () => { },
+                System.Windows.Threading.DispatcherPriority.Render
+            );
+
+            // 4. 更新数据库 DamageAnnotations
+            if (sqlImgInfo != null)
+            {
+                using var sqlHelper = new SQLHelper(Settings.Default.SqlPath);
+                await sqlHelper.UpdateDamageAnnotationAsync(
+                    sqlImgInfo.ImgId,
+                    (int)targetPoint[0],
+                    (int)targetPoint[1],
+                    NORMAL_WELD_ID
+                );
+            }
+
+            // 5. 弹里程输入框
+            var dialog = Dialog.Show<MileageInputDialog>().Initialize<MileageInputDialogViewModel>(x =>
+            {
+                var fileName = Path.GetFileNameWithoutExtension(ImgFullPath);
+                var index = fileName.IndexOf("_");
+                if (index > 0) x.Mileage = fileName.Substring(0, index);
+            });
+
+            var result = await dialog.GetResultAsync<string>();
+
+            if (!string.IsNullOrEmpty(result))
+            {
+                if (sqlImgInfo != null)
+                {
+                    sqlImgInfo.Mileage = result;
+                    using var sqlHelper = new SQLHelper(Settings.Default.SqlPath);
+                    await sqlHelper.UpdateSqlImgInfoAsync(sqlImgInfo);
+                }
+            }
+
+            // 6. 不管里程有没有输入，都同步 result.json 和主窗口 damagePoints
+            if (MainWindow.MainVm.DamageDataList != null)
+            {
+                var data = MainWindow.MainVm.DamageDataList
+                    .FirstOrDefault(x => Path.GetFileName(x.Url) == Path.GetFileName(ImgFullPath));
+
+                if (data != null)
+                    data.DamagePoint = damagePoints.ToArray();
+
+                AboutJson.SaveJson<List<DamageData>>(
+                    MainWindow.MainVm.DamageDataList,
+                    Path.Combine(Settings.Default.InPath, MainWindow.MainVm.ImgFolderName),
+                    "result.json"
+                );
+
+                MainWindow.MainVm.damagePoints = damagePoints.ToArray();
+            }
+
+            if (string.IsNullOrEmpty(OutImgPath))
+                OutImgPath = ImgFullPath.InReplaceOutString();
+
+            MainWindow.MainVm.LoadProjectOverview();
+            return true;
+        }
+
+        public async Task<bool> AutoRestoreModifiedBoxAsync(float oldType, float oldX, float oldY)
+        {
+            if (damagePoints == null || damagePoints.Count == 0)
+                return false;
+
+            // 回退时找“第一次被自动改成 id=2 的框”。
+            // 优先按数据库记录的 oldX/oldY 找；如果坐标有轻微变化，就找最近的 id=2 框。
+            var targetPoint = damagePoints
+                .Where(x => x != null && x.Length >= 5 && (int)x[4] == 2)
+                .OrderBy(x => Math.Abs(x[0] - oldX) + Math.Abs(x[1] - oldY))
+                .FirstOrDefault();
+
+            if (targetPoint == null)
+                return false;
+
+            float distance = Math.Abs(targetPoint[0] - oldX) + Math.Abs(targetPoint[1] - oldY);
+            if (distance > 80)
+            {
+                Console.WriteLine($"自动回退失败：没有找到接近原坐标的 id=2 框。old=({oldX},{oldY}), nearest=({targetPoint[0]},{targetPoint[1]}), distance={distance}");
+                return false;
+            }
+
+            // 1. 恢复本窗口内存数据
+            targetPoint[4] = oldType;
+            targetPoint[5] = 1;
+
+            // 2. 同步修改窗口里的框体显示
+            var targetBox = BoxedStack.FirstOrDefault(b => ReferenceEquals(b.Tag, targetPoint));
+
+            if (targetBox == null)
+            {
+                targetBox = BoxedStack.FirstOrDefault(b =>
+                    Math.Abs(b.RectX - targetPoint[0]) <= 3 &&
+                    Math.Abs(b.RectY - targetPoint[1]) <= 3);
+            }
+
+            if (targetBox != null)
+            {
+                targetBox.ButtonContent = DamageIdToDamageName(oldType);
+                targetBox.RectColor = DamageIdToBrush(oldType);
+                targetBox.RectOpacity = 1;
+                targetBox.RectRadiusX = 0;
+                targetBox.RectRadiusY = 0;
+            }
+
+            await System.Windows.Application.Current.Dispatcher.InvokeAsync(
+                () => { },
+                System.Windows.Threading.DispatcherPriority.Render
+            );
+
+            // 3. 更新数据库 DamageAnnotations，并清空 Images 表里的自动修改记录
+            if (sqlImgInfo != null)
+            {
+                using var sqlHelper = new SQLHelper(Settings.Default.SqlPath);
+
+                await sqlHelper.UpdateDamageAnnotationAsync(
+                    sqlImgInfo.ImgId,
+                    (int)targetPoint[0],
+                    (int)targetPoint[1],
+                    oldType
+                );
+
+                sqlHelper.EnsureConnectionOpen();
+
+                string clearSql = @"
+                    UPDATE Images
+                    SET AutoModifyOldDamageType = NULL,
+                        AutoModifyX = NULL,
+                        AutoModifyY = NULL
+                    WHERE ImageId = @ImageId";
+
+                using var clearCmd = new SqliteCommand(clearSql, sqlHelper.Connection);
+                clearCmd.Parameters.AddWithValue("@ImageId", sqlImgInfo.ImgId);
+                clearCmd.ExecuteNonQuery();
+            }
+
+            // 4. 更新 result.json 和主窗口当前 damagePoints
+            if (MainWindow.MainVm.DamageDataList != null)
+            {
+                var data = MainWindow.MainVm.DamageDataList
+                    .FirstOrDefault(x => Path.GetFileName(x.Url) == Path.GetFileName(ImgFullPath));
+
+                if (data != null)
+                    data.DamagePoint = damagePoints.ToArray();
+
+                AboutJson.SaveJson<List<DamageData>>(
+                    MainWindow.MainVm.DamageDataList,
+                    Path.Combine(Settings.Default.InPath, MainWindow.MainVm.ImgFolderName),
+                    "result.json"
+                );
+
+                MainWindow.MainVm.damagePoints = damagePoints.ToArray();
+            }
+
+            if (string.IsNullOrEmpty(OutImgPath))
+                OutImgPath = ImgFullPath.InReplaceOutString();
+
+            MainWindow.MainVm.LoadProjectOverview();
+            return true;
+        }
+
+
+
         [RelayCommand]
-        void Delete()
+        async void Delete()
         {
             IsNotSave = true;
             var result = System.Windows.MessageBox.Show("确定删除吗 ??", "删除?", MessageBoxButton.YesNo);
 
             if (result == MessageBoxResult.Yes && boxSelecteObject != null)
             {
+                // 如果删除的是高亮框，清除高亮状态
+                if (currentHighlightedBox == boxSelecteObject)
+                {
+                    currentHighlightedBox = null;
+                }
+                // 记录要删除的坐标
+                int deleteX = boxSelecteObject.RectX;
+                int deleteY = boxSelecteObject.RectY;
+
+                // 从UI集合中删除
                 BoxedStack.Remove(boxSelecteObject);
-                damagePoints = damagePoints?.Where(x => !((int)x[0] == boxSelecteObject.RectX && (int)x[1] == boxSelecteObject.RectY))
+
+                // 先获取要删除的damagePoint（在过滤之前）
+                float[] deleteDamagePoint = damagePoints?.FirstOrDefault(x =>
+                    (int)x[0] == deleteX && (int)x[1] == deleteY);
+
+                // 从内存数据中删除
+                damagePoints = damagePoints?.Where(x => !((int)x[0] == deleteX && (int)x[1] == deleteY))
                     .ToList();
+
+                // 更新数据库 - 删除对应坐标的标注
+                if (sqlImgInfo != null)
+                {
+                    using (var sqlHelper = new SQLHelper(Settings.Default.SqlPath))
+                    {
+                        // 根据坐标定位并删除数据库中的标注记录
+                        await sqlHelper.DeleteDamageAnnotationByCoordinatesAsync(
+                            sqlImgInfo.ImgId, deleteDamagePoint
+                        );
+                    }
+                }
+
+                // 更新result.json
+                UpdateResultJson();
+                MainWindow.MainVm.LoadProjectOverview();
+                if (string.IsNullOrEmpty(OutImgPath))
+                {
+                    OutImgPath = this.ImgFullPath.InReplaceOutString();
+                }
+
+                boxSelecteObject = null;
+                CloseAction?.Invoke();
+            }
+            else if (boxSelecteObject == null)
+            {
+                HandyControl.Controls.MessageBox.Warning("当前没有选中任何对象");
+            }
+            MainWindow.MainVm.LoadProjectOverview();
+        }
+
+        [RelayCommand]
+        async void DeleteAll()
+        {
+            IsNotSave = true;
+            var result = System.Windows.MessageBox.Show("确定删除吗 ??", "删除?", MessageBoxButton.YesNo);
+            if (result == MessageBoxResult.Yes)
+            {
+                // 清除高亮状态
+                currentHighlightedBox = null;
+
+                // 清空UI集合
+                BoxedStack.Clear();
+
+                // 清空内存数据
+                damagePoints = new List<float[]>();
+
+                // 更新数据库 - 删除该图片的所有标注
+                if (sqlImgInfo != null)
+                {
+                    using (var sqlHelper = new SQLHelper(Settings.Default.SqlPath))
+                    {
+                        // 根据图片ID删除所有标注
+                        await sqlHelper.DeleteAllDamageAnnotationsByImgIdAsync(sqlImgInfo.ImgId);
+                    }
+                }
+
+                // 更新result.json
+                UpdateResultJson();
 
                 if (string.IsNullOrEmpty(OutImgPath))
                 {
@@ -332,25 +634,27 @@ namespace DamageMaker.ViewModels
                 }
                 CloseAction?.Invoke();
             }
-            else if (boxSelecteObject == null)
-            {
-                HandyControl.Controls.MessageBox.Warning("当前没有选中任何对象");
-            }
+            MainWindow.MainVm.LoadProjectOverview();
         }
-        [RelayCommand]
-        void DeleteAll()
+
+        // 新增辅助方法：更新result.json文件
+        private void UpdateResultJson()
         {
-            IsNotSave = true;
-            var result = System.Windows.MessageBox.Show("确定删除吗 ??", "删除?", MessageBoxButton.YesNo);
-            if (result == MessageBoxResult.Yes)
+            if (MainWindow.MainVm?.DamageDataList != null)
             {
-                BoxedStack.Clear();
-                damagePoints = new List<float[]>();
-                if (string.IsNullOrEmpty(OutImgPath))
+                var data = MainWindow.MainVm.DamageDataList
+                    .FirstOrDefault(x => Path.GetFileName(x.Url) == Path.GetFileName(ImgFullPath));
+                if (data != null)
                 {
-                    OutImgPath = this.ImgFullPath.InReplaceOutString();
+                    data.DamagePoint = damagePoints?.ToArray() ?? Array.Empty<float[]>();
                 }
-                CloseAction?.Invoke();
+
+                // 保存更新后的结果
+                AboutJson.SaveJson<List<DamageData>>(
+                    MainWindow.MainVm.DamageDataList,
+                    Path.Combine(Settings.Default.InPath, MainWindow.MainVm.ImgFolderName),
+                    "result.json"
+                );
             }
         }
 

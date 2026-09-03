@@ -14,10 +14,14 @@ namespace DamageMaker.DamageDataProcessing
     {
         public static SolidColorBrush DamageIdToBrush(float Id)
         {
-            //将伤损ID转换为对应的颜色
+            // 将伤损ID转换为对应的颜色
             int id = (int)Id;
-            //使用 LINQ 查询从 DamageCategoryData 中查找与 ID 匹配的记录，并返回其 CategoryColor 属性          
-            return Models.Records.DamageCategoryData.Where(x => x.Id == id).Select(x => x.CategoryColor).FirstOrDefault() ?? throw new Exception("不存在的伤损id");
+
+            // 使用 LINQ 查询从 DamageCategoryData 中查找与 ID 匹配的记录，并返回其 CategoryColor 属性
+            return Models.Records.DamageCategoryData
+                .Where(x => x.Id == id)
+                .Select(x => x.CategoryColor)
+                .FirstOrDefault() ?? throw new Exception("不存在的伤损id");
         }
         public static string DamageIdToDamageName(float Id)
         {

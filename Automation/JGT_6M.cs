@@ -120,6 +120,7 @@ public static class JGT_6M
 		mainQtWin.Patterns.Window.Pattern.SetWindowVisualState(WindowVisualState.Maximized);
 		mainQtWin.SetForeground();//置顶窗口
 		mainQtWin.WaitUntilClickable();//等待窗口可交互
+		Thread.Sleep(100);
 		mainQtWin.RightClick(); // 在窗口上模拟右键点击
         AutomationElement menu = DeskTop.FindFirstChild((ConditionFactory cf) => cf.ByControlType(ControlType.Menu));
 		if (menu != null)

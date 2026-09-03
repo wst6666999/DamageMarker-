@@ -15,23 +15,17 @@
     WindowState="Maximized"
     WindowStyle="None"
     mc:Ignorable="d">
-    <StackPanel>
-        <StackPanel.LayoutTransform>
+    <Canvas x:Name="RootCanvas" Background="Transparent">
+        <Canvas.LayoutTransform>
             <ScaleTransform x:Name="Scal" />
-        </StackPanel.LayoutTransform>
+        </Canvas.LayoutTransform>
+
+        <!-- 红框：真正截图范围 -->
         <Border
             x:Name="selectionBorder"
-            HorizontalAlignment="Left"
-            VerticalAlignment="Top"
             BorderBrush="Red"
             BorderThickness="4">
-            <!--  边框是向内占用空间的  -->
             <Grid Background="Transparent">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="10*" />
-                    <RowDefinition Height="1*" />
-                </Grid.RowDefinitions>
-
                 <Button
                     Name="CloseButton"
                     Width="22"
@@ -44,27 +38,21 @@
                     Command="hc:ControlCommands.CloseWindow"
                     CommandParameter="{Binding RelativeSource={RelativeSource Self}}"
                     Foreground="White"
-                    Grid.Row="0"
-                    Style="{StaticResource ButtonIcon}"
-                    />
-                <Rectangle
-                    x:Name="MileageBorder"
-                    Grid.Row="1"
-                    Height="60"
-                    VerticalAlignment="Bottom"
-                    Fill="Transparent"
-                    Stroke="Blue"
-                    StrokeThickness="1" />
+                    Style="{StaticResource ButtonIcon}" />
             </Grid>
         </Border>
-        <!--<TextBlock FontSize="20" Foreground="red" HorizontalAlignment="Center">Ctrl+Shift+A 向左截图</TextBlock>
-        <TextBlock FontSize="20" Foreground="red" HorizontalAlignment="Center">Ctrl+Shift+D 向右截图</TextBlock>
-        <TextBlock FontSize="20" Foreground="red" HorizontalAlignment="Center">Ctrl+Shift+P 停止截图</TextBlock>-->
+
+        <!-- 蓝框：OCR里程识别提示区域，和红框同级，便于使用绝对坐标控制 -->
+        <Rectangle
+            x:Name="MileageBorder"
+            Fill="Transparent"
+            Stroke="Blue"
+            StrokeThickness="1" />
+
         <TextBlock
-            HorizontalAlignment="Center"
+            x:Name="TipText"
             FontSize="24"
-            Foreground="red">
-            回放过程中请勿按左右按键,并且保证里程在蓝框内
-        </TextBlock>
-    </StackPanel>
+            Foreground="Red"
+            Text="回放过程中请勿按左右按键,并且保证里程在蓝框内" />
+    </Canvas>
 </Window>

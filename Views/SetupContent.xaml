@@ -10,9 +10,9 @@
     xmlns:viewmodels="clr-namespace:DamageMaker.ViewModels"
     xmlns:vm="clr-namespace:DamageMarker.ViewModels"
     d:DataContext="{d:DesignInstance Type=viewmodels:SetupContentViewModel}"
-    mc:Ignorable="d">
-    <StackPanel>
-        <TabControl Width="300">
+    mc:Ignorable="d" Width="436">
+    <StackPanel Margin="0,0,-69,0">
+        <TabControl Width="421">
             <FrameworkElement.Resources>
                 <ResourceDictionary>
                     <Style x:Key="{x:Type StackPanel}" TargetType="{x:Type StackPanel}">
@@ -257,7 +257,97 @@
                         CommandParameter="True"/>
                 </StackPanel>
             </TabItem>
-            
+            <TabItem Header="超速设置">
+                <StackPanel Margin="10">
+                    <!-- 超速设置 -->
+                    <hc:Divider Content="速度限制设置" />
+
+                    <UniformGrid Columns="7" HorizontalAlignment="Center">
+                        <!-- 超速基础设置 -->
+                        <TextBlock Text="速度值" VerticalAlignment="Center"/>
+                        <hc:NumericUpDown 
+    Value="{Binding LimitedSpeed, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+    Minimum="0"
+    DecimalPlaces="1"
+    Increment="0.1"
+    Width="60"
+    Margin="5"/>
+                        <TextBlock Text="KM/H" VerticalAlignment="Center"/>
+
+                        <Rectangle Width="20"/>
+
+                        <TextBlock Text="焊缝速度" VerticalAlignment="Center" Width="37"/>
+                        <hc:NumericUpDown 
+    Value="{Binding ThroughWeldSpeed, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+    Minimum="0"
+    DecimalPlaces="1"
+    Increment="0.1"
+    Width="52"/>
+                        <TextBlock Text="KM/H" VerticalAlignment="Center"/>
+                    </UniformGrid>
+
+                    
+                    <!-- 应用按钮 -->
+                    <Button 
+                        Content="应用超速设置" 
+                        Command="{Binding ChangeLimitedSpeedCommand}"
+                        Width="120"
+                        HorizontalAlignment="Center"
+                        Margin="0,10"
+                        Style="{StaticResource ButtonPrimary}"
+                        />
+               
+                    
+                </StackPanel>
+            </TabItem>
+            <TabItem Header="失底波设置">
+                <StackPanel Margin="10">
+                    <!-- 失底波范围设置 -->
+                    <hc:Divider Content="失底波范围设置" />
+
+                    <UniformGrid Columns="3"  
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center">
+                        <!-- 添加垂直居中 -->
+
+                        <!-- 失底波基础设置 -->
+                        <TextBlock Text="长度" 
+               HorizontalAlignment="Center"  
+               VerticalAlignment="Center"
+               Margin="5"/>
+
+                        <hc:NumericUpDown 
+    Value="{Binding LimitedLost, Mode=TwoWay}"
+    Minimum="0"
+    Maximum="9999999"  
+                            Width="60"
+    Margin="5"
+    HorizontalAlignment="Center"
+    VerticalAlignment="Center"
+    />
+
+                        <TextBlock Text="M" 
+               HorizontalAlignment="Center"  
+               VerticalAlignment="Center" 
+               Width="47"
+               Margin="5"/>
+
+                    </UniformGrid>
+
+
+                    <!-- 应用按钮 -->
+                    <Button 
+            Content="应用失底波设置" 
+            Command="{Binding ChangeLimitedLostCommand}"
+            Width="120"
+            HorizontalAlignment="Center"
+            Margin="0,10"
+            Style="{StaticResource ButtonPrimary}"
+            />
+
+
+                </StackPanel>
+            </TabItem>
         </TabControl>
     </StackPanel>
 </UserControl>

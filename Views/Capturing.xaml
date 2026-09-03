@@ -17,7 +17,7 @@
         Background="#FF2B2B2B"
         Opacity="0.8"
         CornerRadius="30">
-        <UniformGrid Columns="7" Margin="30,0,0,0">
+        <UniformGrid Columns="7" Margin="70,0,0,0">
             <Button ToolTip="录入本次探伤信息" Click="InputInfo">录入信息</Button>
             <Button Margin="3" Click="ToNewSelectionWindow_Click">手动选区</Button>
             <Button Margin="3" Click="ToPlaybackWindow_Click">显示选区</Button>
@@ -25,7 +25,8 @@
             <Button Content="向左截图" Click="LeftMove" Margin="3"></Button>
             <!--<Button Content="停" Click="StopMove"></Button>-->
             <Button Content="向右截图" ToolTip="向右截图" Click="RightMove" Margin="3"></Button>
-            <ToggleButton Style="{StaticResource  ToggleButtonLoading}" Content="文件侦测" ToolTip="侦测in文件夹,并等图片保存完毕.开始分析" IsChecked="{Binding IsAnalysising}" Command="{Binding ImgsAnalysisCommand}"/>
+
+            <!--<ToggleButton Style="{StaticResource  ToggleButtonLoading}" Content="文件侦测" ToolTip="侦测in文件夹,并等图片保存完毕.开始分析" IsChecked="{Binding IsAnalysising}" Command="{Binding ImgsAnalysisCommand}"/>-->
         </UniformGrid>
     </Border>
     <Button

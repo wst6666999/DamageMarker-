@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using DamageMarker.Views;
 using HandyControl.Controls;
 using HandyControl.Tools.Extension;
 using System;
@@ -21,6 +22,7 @@ namespace DamageMaker.ViewModels
         {
             Result = Mileage;
             CloseAction?.Invoke();
+            MainWindow.MainVm.LoadProjectOverview();
         }
 
         [RelayCommand]
@@ -28,6 +30,7 @@ namespace DamageMaker.ViewModels
         {
             Result = null;
             CloseAction?.Invoke();
+            MainWindow.MainVm.LoadProjectOverview();
         }
     }
 }

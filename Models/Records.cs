@@ -12,7 +12,13 @@ namespace DamageMaker.Models
 {
     public class Records
     {
-        public record OcrData(string ImgFullPath, string MileageText,string speedvalue);
+        // LineType 为每张图片对应的 8C 中文OCR补充信息。默认空字符串兼容旧JSON。
+        public record OcrData(
+            string ImgFullPath,
+            string MileageText,
+            string speedvalue,
+            string LineType = "");
+
         public record DamageCategoryRecord(int Id, string CategoryName, SolidColorBrush CategoryColor,string? Remark,bool IsRule);
         public static List<DamageCategoryRecord> DamageCategoryData = new()
         {
@@ -38,7 +44,7 @@ namespace DamageMaker.Models
             new (2, "普通焊缝", Brushes.Green, null, false),
             new (3, "七十度螺孔回波", Brushes.Green, null, false),
             new (4, "轨形变换", Brushes.Green, null, false),
-            new (5, "母材核伤", Brushes.Red, null, false),
+            new (5, "其他核伤", Brushes.Red, null, false),
             new (6, "焊缝核伤", Brushes.Red, null, false),
             new (7, "螺孔裂纹", Brushes.Red, null, false),
             new (8, "零度异常", Brushes.Red, null, false),
@@ -52,22 +58,22 @@ namespace DamageMaker.Models
             new (17, "轻伤标记", Brushes.YellowGreen, null, false),
             new (18, "轻伤发展", Brushes.YellowGreen, null, false),
             new (19, "重伤标志", Brushes.YellowGreen, null, false),
-          //  new (20, "作业违规", Brushes.YellowGreen, null, false),
             new (21, "焊缝且无焊缝标记", Brushes.YellowGreen, null, false),
             new (22, "假像波", Brushes.Green, null, false),
             new (24, "岔心", Brushes.Green, null, false),
-            //new (25, "核伤2(母材)", Brushes.Red, "核伤2：在一次波区域（2个点以上）", false),
             new (28, "正常螺孔", Brushes.Green, null, false),
             new (29, "水平裂纹", Brushes.Red, null, false),
-            new (36, "鱼鳞伤", Brushes.Red, null, false),
+            new (36, "鱼鳞伤", Brushes.Red,null,false),
             new (37, "轨底裂纹", Brushes.Red, null, false),
             new (39, "接头出波不全", Brushes.YellowGreen, null, false),
             new (46, "厂焊",Brushes.YellowGreen,null,false),
             new (47, "铝热焊",Brushes.YellowGreen,null,false),
             new (48, "超速",Brushes.YellowGreen,null,false),
+            new (49, "倒车",Brushes.YellowGreen,null,false),
+            new (51,"失底波",Brushes.YellowGreen,null,false),
+            new (52,"有焊缝标记核伤",Brushes.Red,null,false)
         };
 
     }
 
-    }
-
+}

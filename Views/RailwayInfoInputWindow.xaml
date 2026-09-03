@@ -8,19 +8,20 @@
     xmlns:sys="clr-namespace:System;assembly=mscorlib"
     xmlns:viewmodels="clr-namespace:DamageMaker.ViewModels"
     Width="400"
-    Height="820"
+    Height="984"
     Background="{DynamicResource RegionBrush}"
     Closed="Window_Closed"
     ResizeMode="NoResize"
     WindowStartupLocation="CenterScreen"
+    Title="铁轨回放信息录入"
     WindowStyle="SingleBorderWindow">
 
     <hc:Window.Resources>
         <cvs:WorkDateToStringConverter x:Key="WorkDateToStringConverter" />
         <!--  其他资源  -->
         <Style x:Key="InputCard" TargetType="hc:Card">
-            <Setter Property="Margin" Value="10,8" />
-            <Setter Property="Padding" Value="15" />
+            <Setter Property="Margin" Value="10,0" />
+            <Setter Property="Padding" Value="20" />
             <Setter Property="Background" Value="{DynamicResource PrimaryBackgroundBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
             <Setter Property="BorderThickness" Value="1" />
@@ -32,7 +33,7 @@
             <Setter Property="hc:TitleElement.Foreground" Value="#444" />
         </Style>
         <Style BasedOn="{StaticResource DatePickerExtend}" TargetType="DatePicker">
-            <Setter Property="Margin" Value="0,5" />
+            <Setter Property="Margin" Value="0,1" />
             <Setter Property="FontSize" Value="14" />
             <Setter Property="BorderThickness" Value="1" />
         </Style>
@@ -66,10 +67,13 @@
                 <hc:Card Style="{StaticResource InputCard}">
                     <StackPanel>
                         <hc:ComboBox
+                            AutomationProperties.AutomationId="comboInstrument"
                             hc:TitleElement.Title="仪器类型："
                             FontSize="{StaticResource SubHeadFontSize}"
+                            hc:InfoElement.Necessary="True"
+                            hc:InfoElement.Placeholder="必填"
                             IsEditable="True"
-                            Text="{Binding Instruments}" SelectionChanged="ComboBox_SelectionChanged">
+                            Text="{Binding Instruments}">
                             <ComboBoxItem Content="8C" />
                             <ComboBoxItem Content="6M" />
                             <ComboBoxItem Content="8D" />
@@ -77,9 +81,13 @@
                             <ComboBoxItem Content="gt-20" />
                             <ComboBoxItem Content="双轨501" />
                             <ComboBoxItem Content="双轨502" />
+                            <ComboBoxItem Content="gt-60" />
+                            <ComboBoxItem Content="DL探伤数据回放软件" />
+                            <!--<ComboBoxItem Content="双轨502" />-->
                         </hc:ComboBox>
                         <!--  串号需要在历史记录显现  -->
                         <hc:TextBox
+                            AutomationProperties.AutomationId="txtSerialNumber"
                             hc:InfoElement.Necessary="True"
                             hc:InfoElement.Placeholder="必填"
                             hc:InfoElement.Title="仪器串号："
@@ -94,44 +102,76 @@
                     <StackPanel>
                         <DatePicker
                             hc:InfoElement.Necessary="True"
+                            AutomationProperties.AutomationId="DateTimePicker"
                             hc:InfoElement.Placeholder="必填:例2025/3/31"
                             hc:TitleElement.Title="作业日期："
                             FontSize="{StaticResource SubHeadFontSize}"
                             SelectedDate="{Binding WorkDate, Converter={StaticResource WorkDateToStringConverter}}" />
-                        
+
                         <!--  作业区间需要在历史记录显现  -->
                         <hc:TextBox
                             hc:InfoElement.Necessary="True"
                             hc:InfoElement.Placeholder="必填"
+                            AutomationProperties.AutomationId="txtWorkSection"
                             hc:InfoElement.Title="作业区间："
                             FontSize="{StaticResource SubHeadFontSize}"
                             Text="{Binding WorkSection}" />
+
                         <hc:TextBox
                             hc:TitleElement.Title="作业长度："
+                            AutomationProperties.AutomationId="txtWorkLength"
                             FontSize="{StaticResource SubHeadFontSize}"
                             Text="{Binding WorkLength}" />
+                        <Grid Margin="0,5,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="10" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <hc:TextBox
+                                Grid.Column="0"
+                                hc:TitleElement.Title="起始里程："
+                                AutomationProperties.AutomationId="txtStartMileage"
+                                FontSize="{StaticResource SubHeadFontSize}"
+                                Text="{Binding StartMileage, UpdateSourceTrigger=PropertyChanged}"
+                                Style="{StaticResource TextBoxExtend}" />
+
+                            <hc:TextBox
+                                Grid.Column="2"
+                                hc:TitleElement.Title="结束里程："
+                                AutomationProperties.AutomationId="txtEndMileage"
+                                FontSize="{StaticResource SubHeadFontSize}"
+                                Text="{Binding EndMileage, UpdateSourceTrigger=PropertyChanged}"
+                                Style="{StaticResource TextBoxExtend}" />
+                        </Grid>
+                        
+                        
+                        <hc:TextBox
+                            hc:TitleElement.Title="工区班组："
+                            AutomationProperties.AutomationId="txtWorkGroup"
+                            FontSize="{StaticResource SubHeadFontSize}"
+                            Text="{Binding WorkGroup}" />
                     </StackPanel>
                 </hc:Card>
-
                 
-
                 <!--  线路信息  -->
                 <hc:Card Style="{StaticResource InputCard}">
                     <StackPanel>
                         <hc:ComboBox
-                            hc:TitleElement.Title="正线/站线"
+                            hc:TitleElement.Title="线别"
+                            hc:InfoElement.Necessary="True"
+                            hc:InfoElement.Placeholder="必填"
+                            IsEditable="True"
                             FontSize="{StaticResource SubHeadFontSize}"
-                            SelectedValue="{Binding SelectedLineType}"
-                            SelectedValuePath="Content"
-                            Style="{StaticResource ComboBoxExtend}">
-                            <ComboBoxItem Content="正线" IsSelected="True" />
-                            <ComboBoxItem Content="站线" />
-                        </hc:ComboBox>
+                            ItemsSource="{Binding RouteLines}"
+                            SelectedItem="{Binding SelectedRouteLine}"
+                            LostFocus="ComboBox_LostFocus"
+                            Text="{Binding SelectedRouteLineText, Mode=TwoWay}"
+                            Style="{StaticResource ComboBoxExtend}"/>
+                        
 
-                        <hc:TextBox
-                            hc:TitleElement.Title="工区班组："
-                            FontSize="{StaticResource SubHeadFontSize}"
-                            Text="{Binding WorkGroup}" />
+                        
                     </StackPanel>
                 </hc:Card>
 
@@ -140,8 +180,37 @@
                     <StackPanel>
                         <hc:TextBox
                             hc:TitleElement.Title="回放人员："
+                            AutomationProperties.AutomationId="txtOperator"
                             FontSize="{StaticResource SubHeadFontSize}"
                             Text="{Binding OperatorName}" />
+                    </StackPanel>
+                </hc:Card>
+
+                <hc:Card Style="{StaticResource InputCard}">
+                    <StackPanel>
+                        <hc:ComboBox
+                            hc:TitleElement.Title="周期信息："
+                             hc:InfoElement.Necessary="True"
+                             hc:InfoElement.Placeholder="必填"
+                            AutomationProperties.AutomationId="comboCycleNumbers"
+                            FontSize="{StaticResource SubHeadFontSize}"
+                            SelectedValue="{Binding SelectedCycleNumber, Mode=TwoWay}"
+                            SelectedValuePath="Content"
+                            SelectedIndex="-1" Height="56">
+                            <ComboBoxItem Content="第1个周期" />
+                            <ComboBoxItem Content="第2个周期" />
+                            <ComboBoxItem Content="第3个周期" />
+                            <ComboBoxItem Content="第4个周期" />
+                            <ComboBoxItem Content="第5个周期" />
+                            <ComboBoxItem Content="第6个周期" />
+                            <ComboBoxItem Content="第7个周期" />
+                            <ComboBoxItem Content="第8个周期" />
+                            <ComboBoxItem Content="第9个周期" />
+                            <ComboBoxItem Content="第10个周期" />
+                            <ComboBoxItem Content="第11个周期" />
+                            <ComboBoxItem Content="第12个周期" />
+                            <ComboBoxItem Content="          " />
+                        </hc:ComboBox>
                     </StackPanel>
                 </hc:Card>
             </StackPanel>
@@ -157,6 +226,7 @@
                 Height="30"
                 Background=" #5586de "
                 Command="{Binding SaveRailWayInfoCommand}"
+                AutomationProperties.AutomationId="btnSave"
                 CommandParameter="{Binding RelativeSource={RelativeSource AncestorType={x:Type hc:Window}}}"
                 Content="保存信息"
                 FontSize="13"

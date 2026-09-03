@@ -14,6 +14,7 @@ namespace DamageMaker.Models
         public int ScreenshotWidthPx { get; set; }
         public MoveDirection ScreenshotDirection { get; set; }
 
+        public bool isAnalyzed { get; set; }
         public RailInfo RailWayInfo { get; set; }
     }
     public class RailInfo
@@ -26,16 +27,21 @@ namespace DamageMaker.Models
         public string? WorkLength { get; set; }
         public string? SelectedLineType { get; set; }
 
-      
+        public string? SelectedRailType { get; set; }
         public string? WorkGroup { get; set; }
         public string? OperatorName { get; set; }
         public string? AnalyzeTime { get; set; }
 
+        public string? StartMileage { get; set; }
+
+        public string? EndMileage { get; set; }
         public string? ElapsedTimeForScrrnshot { get; set; }
 
         public string? ElapsedTimeForAnalyze { get; set; }
         public string? Remark { get; set; }
-
+        public string? SelectedRouteLine { get; set; }
+        public string? SelectedUpOrDown { get; set; }
+        public int? CycleNumber { get; set; }
     }
 
 }

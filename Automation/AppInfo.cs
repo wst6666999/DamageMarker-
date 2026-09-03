@@ -17,9 +17,15 @@ namespace DamageMaker.Automation
         
         public static  string GetFocusedApplicationName()
         {
+            // 保存当前鼠标位置
+            var originalPosition = System.Windows.Forms.Cursor.Position;
+
             Mouse.MovePixelsPerMillisecond = 200;
             Mouse.MoveTo(new Point((int)(1800), (int)(1000)));
             Mouse.DoubleClick(FlaUI.Core.Input.MouseButton.Left);
+            System.Threading.Thread.Sleep(300);
+            // 操作完成后恢复鼠标位置
+            //System.Windows.Forms.Cursor.Position = originalPosition;
             using (var automation = new UIA3Automation())
             {             
                 var focusedElement = automation.FocusedElement();
@@ -27,8 +33,8 @@ namespace DamageMaker.Automation
                 {
                     var app = focusedElement.Properties.ProcessId;
                     var process = System.Diagnostics.Process.GetProcessById(app);
-                    Console.WriteLine($"聚焦到应用:{process.MainModule.ModuleName}");
-                    return process.MainModule.ModuleName;
+                    Console.WriteLine($"聚焦到应用:{process.ProcessName}");
+                    return process.ProcessName;
                 }
                 return string.Empty;
             }

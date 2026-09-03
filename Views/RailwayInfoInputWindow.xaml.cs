@@ -1,5 +1,7 @@
-﻿using DamageMaker.ViewModels;
+﻿using System.Windows;
+using DamageMaker.ViewModels;
 using HandyControl.Controls;
+using Window = HandyControl.Controls.Window;
 
 namespace DamageMaker.Views
 {
@@ -27,6 +29,17 @@ namespace DamageMaker.Views
         }
 
         private void ComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+
+        }
+        private void ComboBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            // 可选：在失去焦点时立即保存
+            var vm = DataContext as RailwayInfoInputViewModel;
+            vm?.SaveManualRouteLine();
+        }
+
+        private void ComboBox_SelectionChanged_1(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
 
         }

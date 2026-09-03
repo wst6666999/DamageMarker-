@@ -24,7 +24,7 @@ namespace DamageMaker.Views
         public MileageInputDialog()
         {
             InitializeComponent();
-            DataContext=new MileageInputDialogViewModel();
+            DataContext = new MileageInputDialogViewModel();
         }
     }
 }

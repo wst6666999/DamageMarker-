@@ -32,12 +32,18 @@ namespace DamageMaker.SqliteServer
         { "@WorkDate", NeedSavedInfo.RailWayInfo.WorkDate },
         { "@WorkSection", NeedSavedInfo.RailWayInfo.WorkSection },
         { "@WorkLength", NeedSavedInfo.RailWayInfo.WorkLength },
+        { "@StartMileage", NeedSavedInfo.RailWayInfo.StartMileage },
+        { "@EndMileage", NeedSavedInfo.RailWayInfo.EndMileage },
+        { "@SelectedRailType", NeedSavedInfo.RailWayInfo.SelectedRailType },
         { "@SelectedLineType", NeedSavedInfo.RailWayInfo.SelectedLineType },
         { "@WorkGroup", NeedSavedInfo.RailWayInfo.WorkGroup },
         { "@OperatorName", NeedSavedInfo.RailWayInfo.OperatorName },
         { "@AnalyzeTime", NeedSavedInfo.RailWayInfo.AnalyzeTime },
         { "@ElapsedTimeForScrrnshot", NeedSavedInfo.RailWayInfo.ElapsedTimeForScrrnshot },
         { "@ElapsedTimeForAnalyze", NeedSavedInfo.RailWayInfo.ElapsedTimeForAnalyze },
+        { "@SelectedRouteLine" , NeedSavedInfo.RailWayInfo.SelectedRouteLine},
+        { "@SelectedUpOrDown" , NeedSavedInfo.RailWayInfo.SelectedUpOrDown},
+        { "@CycleNumber",NeedSavedInfo.RailWayInfo.CycleNumber  }
     };
 
             int rowsAffected = sqlHelper.InsertTable(parameters, "DamageFolders");
@@ -76,51 +82,6 @@ namespace DamageMaker.SqliteServer
             }
         }
 
-        static public void AppendImageRemark(List<SqlImgInfo> SqlImgInfos, string imgPath, string? remark)
-        {
-            var target = SqlImgInfos.FirstOrDefault(info => Path.GetFileName(info.ImgPath) == Path.GetFileName(imgPath));
-            if (target != null)
-            {
-                if (target.Remark != remark)
-                {
-                    using (var sqlHelper = new SQLHelper(Settings.Default.SqlPath))
-                    {
-                        int rowsAffected = sqlHelper.AppendImageRemark(target.ImgId, remark);
-                        if (rowsAffected > 0)
-                        {
-                            target.Remark = remark;
-                        }
-                    }
-                }
-            }
-            else
-            {
-                Console.WriteLine($"未找到路径为 {imgPath} 的图片信息。");
-            }
-        }
-        static public void AppendImageRemark(SqlImgInfo target, string imgPath, string? remark)
-        {           
-            if (target != null)
-            {
-                if (target.Remark != remark)
-                {
-                    target.Remark = remark;
-                    using (var sqlHelper = new SQLHelper(Settings.Default.SqlPath))
-                    {
-                        int rowsAffected = sqlHelper.AppendImageRemark(target.ImgId, remark);
-                        if (rowsAffected > 0)
-                        {
-                            target.Remark = remark;
-                        }
-                    }
-                }
-            }
-            else
-            {
-                Console.WriteLine($"未找到路径为 {imgPath} 的图片信息。");
-            }
-        }
-
         public static void UpdateImageData(List<SqlImgInfo> sqlImgInfos, string imgFullPath, byte[] imageBytes)
         {
             using (var sqlHelper = new SQLHelper(Settings.Default.SqlPath))
@@ -134,6 +95,22 @@ namespace DamageMaker.SqliteServer
                         imgInfo.ImageData = imageBytes; // 同步内存
                     }
                 }
+            }
+        }
+
+        /// <summary>
+        /// 根据路线、方向和周期号获取焊缝位置信息
+        /// </summary>
+        /// <param name="routeLine"></param>
+        /// <param name="direction"></param>
+        /// <param name="cycleNumber"></param>
+        /// <returns></returns>
+        public static List<WeldPositionInfo> GetWeldPositionsByRouteAndDirectionAndCycle(
+            string routeLine, string direction, string? railType, int cycleNumber ,string? startMileage,string? endMileage)
+        {
+            using(var sqlHelper = new SQLHelper(Settings.Default.SqlPath))
+            {
+                return sqlHelper.GetWeldPositionsByRouteAndDirectionAndCycle(routeLine, direction, railType, cycleNumber,startMileage, endMileage);
             }
         }
     }

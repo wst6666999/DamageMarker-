@@ -170,27 +170,27 @@ namespace DamageMaker.Views
 
 
                 dialog.Initialize<SampleImgViewModel>(vm =>
-                 {
-                     if (!vm.IsNotSave)
-                     {
-                         vm.BoxedStack.Add(new BoxSelectedControl()
-                         {
-                             RectColor = DamageIdToBrush((float)aa),
-                             RectX = (int)(startPosition.X + startOffset.X),
-                             RectY = (int)(startPosition.Y + startOffset.Y),
-                             RectWidth = Math.Abs((int)point.X),
-                             RectHeight = Math.Abs((int)point.Y),
-                             RectOpacity = 1,
-                             ButtonContent = vm.Result.ToString()
-                         });
-                         vm.damagePoints.Add(new float[] { (int)(startPosition.X + startOffset.X), (int)(startPosition.Y + startOffset.Y), Math.Abs((int)point.X), Math.Abs((int)point.Y), (float)vm.Result, 1.0f });
-                         vm.OutImgPath = vm.ImgFullPath.InReplaceOutString();
-                     }
-                 });
+                {
+                    if (!vm.IsNotSave)
+                    {
+                        vm.BoxedStack.Add(new BoxSelectedControl()
+                        {
+                            RectColor = DamageIdToBrush((float)aa),
+                            RectX = (int)(startPosition.X + startOffset.X),
+                            RectY = (int)(startPosition.Y + startOffset.Y),
+                            RectWidth = Math.Abs((int)point.X),
+                            RectHeight = Math.Abs((int)point.Y),
+                            RectOpacity = 1,
+                            ButtonContent = vm.Result.ToString()
+                        });
+                        vm.damagePoints.Add(new float[] { (int)(startPosition.X + startOffset.X), (int)(startPosition.Y + startOffset.Y), Math.Abs((int)point.X), Math.Abs((int)point.Y), (float)vm.Result, 1.0f });
+                        vm.OutImgPath = vm.ImgFullPath.InReplaceOutString();
+                    }
+                });
             }
             canv.Children.Remove(insertShape);
         }
-      
+
 
 
 
@@ -220,7 +220,6 @@ namespace DamageMaker.Views
         }
         private BitmapSource? SaveCanvasScreenshot()
         {
-            // 获取 Canvas 控件
             var canv = this.FindName("canv") as Canvas;
             if (canv == null)
             {
@@ -228,7 +227,12 @@ namespace DamageMaker.Views
                 return null;
             }
 
-            // 创建 RenderTargetBitmap
+            // 关键修复：强制刷新视觉树
+            canv.UpdateLayout();
+            canv.InvalidateVisual();
+
+            Dispatcher.Invoke(() => { }, DispatcherPriority.Render);
+
             var renderBitmap = new RenderTargetBitmap(
                 (int)canv.ActualWidth,
                 (int)canv.ActualHeight,
@@ -236,14 +240,18 @@ namespace DamageMaker.Views
                 96d,
                 PixelFormats.Pbgra32);
 
-            // 渲染 Canvas 到 RenderTargetBitmap
             renderBitmap.Render(canv);
+
             var outImgPath = (OutPath.DataContext as SampleImgViewModel)?.OutImgPath;
+
             if (!string.IsNullOrEmpty(outImgPath))
             {
                 return renderBitmap;
             }
-            else { return null; }
+            else
+            {
+                return null;
+            }
         }
 
 

@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 
 /// <summary>
 /// 序列化：将程序中的数据结构或对象转换为符合JSON格式的字符串（文本）的过程
@@ -44,15 +45,21 @@ namespace DamageMaker.FileHandle
             try
             {
                 //读取指定路径的 JSON 文件内容
-                var DString = Path.Combine(JsonPath, "result.json");
+
                 var SString = Path.Combine(JsonPath, "info.json");
                 //调用DesserializeJson方法将 JSON 字符串反序列化为对象,并返回;(此方法已经在AboutJSon类中封装好了)
-                var DamgeDatas = AboutJson.DeserializeJson<List<DamageData>>(DString);
+              
                 
                 var DamgeShots = AboutJson.DeserializeJson<ScreenshotInfo>(SString);
                 //var hasThermiteWeld47 = DamgeDatas.Any(d => d.DamagePoint?.Any(p => p.Length > 4 && p[4] == 47) ?? false);
                 //Console.WriteLine($"原始数据中是否存在铝热焊47: {hasThermiteWeld47}");
 
+                var DString = Path.Combine(JsonPath, "result1.json");
+                if (!File.Exists(DString))
+                {
+                    DString = Path.Combine(JsonPath, "result.json");
+                }
+                var DamgeDatas = AboutJson.DeserializeJson<List<DamageData>>(DString);
                 return (DamgeDatas, DamgeShots);
             }
             catch (Exception ex)
@@ -116,7 +123,12 @@ namespace DamageMaker.FileHandle
             }
             else
             {
-                MessageBox.Error($"{jsonPath}路径不存在");
+                Directory.CreateDirectory(jsonPath);
+                if (jsonData != null)
+                {
+                    string jsonString = JsonSerializer.Serialize(jsonData, new JsonSerializerOptions { WriteIndented = true });
+                    File.WriteAllText(Path.Combine(jsonPath, jsonName), jsonString);
+                }
             }
         }
      }

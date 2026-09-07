@@ -1289,5 +1289,9 @@ namespace DamageMarker.Views
             return null;
         }
 
+        private void ToggleButton_Checked_2(object sender, RoutedEventArgs e)
+        {
+
+        }
     }
 }

@@ -3629,6 +3629,14 @@ VALUES
         [RelayCommand]
         void ProcessStart(string exePath)
         {
+            // 权限控制：菜单内只允许启动 8C 回放软件（RailTest8C），其余软件提示无权限。
+            string exeName = Path.GetFileName(exePath ?? string.Empty);
+            if (exeName.IndexOf("RailTest8C", StringComparison.OrdinalIgnoreCase) < 0)
+            {
+                MessageBox.Info("当前没有权限使用！");
+                return;
+            }
+
             Utilities.StartProcess(exePath);
             Growl.InfoGlobal("应用程序已成功启动!");
             ScreenShotFunc();

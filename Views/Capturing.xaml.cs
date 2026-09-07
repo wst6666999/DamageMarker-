@@ -478,6 +478,14 @@ namespace DamageMaker.Views
             var AppName = Automation.AppInfo.GetFocusedApplicationName();
             Console.WriteLine(AppName);
 
+            // 权限控制：智能回放只允许使用 8C 回放软件（RailTest8C），
+            // 其余软件（含用户手动在电脑上打开的）一律提示无权限。
+            if (AppName.IndexOf("RailTest8C", StringComparison.OrdinalIgnoreCase) < 0)
+            {
+                MessageBox.Info("当前没有权限使用！");
+                return;
+            }
+
             // 在智能框选前验证必填字段
             var vm = RailWin.DataContext as RailwayInfoInputViewModel;
             if (vm == null ||

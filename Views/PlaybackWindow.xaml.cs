@@ -569,6 +569,15 @@ namespace DamageMarker.Views
             PlaybackedAppName = AppInfo.GetFocusedApplicationName();
             await Task.Delay(1000);
 
+            // 权限控制：回放截图只允许 8C 软件（RailTest8C）。
+            // 无论用户从「智能选区 / 显示选区 / 左右截图」哪条路径进入，最终都汇聚到这里。
+            if (PlaybackedAppName.IndexOf("RailTest8C", StringComparison.OrdinalIgnoreCase) < 0)
+            {
+                PlaybackingYN = false;
+                MessageBox.Info("当前没有权限使用！");
+                return;
+            }
+
             if (PlaybackedAppName.Contains("JGT-6M"))
             {
                 keystrokes = 2;

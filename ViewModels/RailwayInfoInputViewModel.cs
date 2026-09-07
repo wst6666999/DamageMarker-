@@ -301,34 +301,39 @@ namespace DamageMaker.ViewModels
 
         private void OnScreenShotFinished(object sender, string time)
         {
-            var o = sender as PlaybackWindow;
-            NeedSavedInfo = NeedSavedInfo ?? new();
-            NeedSavedInfo.ScreenshotOffset = o?.MoveRepeatPx ?? 0;
-            NeedSavedInfo.ScreenshotDirection = o?.PlaybackDirection ?? MoveDirection.Left;
-            NeedSavedInfo.ScreenshotWidthPx = o?.ImgWidthPx ?? 0;
-
-            NeedSavedInfo.RailWayInfo = new RailInfo()
+            // ScreenshotFinished 可能由 PlaybackWindow 的非 UI 线程触发，
+            // 此处涉及访问主窗口（WPF UI 对象），需切回 UI 线程执行，否则会抛跨线程异常。
+            Application.Current.Dispatcher.Invoke(() =>
             {
-                RailWayName = RailwayName,
-                Instruments = this.Instruments,
-                SerialNumber = this.SerialNumber,
-                WorkDate = WorkDate,
-                WorkSection = this.WorkSection,
-                WorkLength = this.WorkLength,
-                SelectedRailType = this.SelectedRailType,
-                SelectedLineType = this.SelectedLineType,
-                WorkGroup = this.WorkGroup,
-                StartMileage = this.startMileage,
-                EndMileage = this.endMileage,
-                OperatorName = this.OperatorName,
-                AnalyzeTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
-                ElapsedTimeForScrrnshot = time,
-                SelectedRouteLine = this.SelectedRouteLine,
-                SelectedUpOrDown = this.SelectedUpOrDown,
-                CycleNumber = ParseCycleNumber(SelectedCycleNumber)
-            };
-            //AboutJson.SaveJson(NeedSavedInfo, Path.Combine(Settings.Default.InPath, MainWindow.MainVm.ImgFolderName), "info.json");
-            Application.Current.MainWindow.WindowState = WindowState.Maximized;
+                var o = sender as PlaybackWindow;
+                NeedSavedInfo = NeedSavedInfo ?? new();
+                NeedSavedInfo.ScreenshotOffset = o?.MoveRepeatPx ?? 0;
+                NeedSavedInfo.ScreenshotDirection = o?.PlaybackDirection ?? MoveDirection.Left;
+                NeedSavedInfo.ScreenshotWidthPx = o?.ImgWidthPx ?? 0;
+
+                NeedSavedInfo.RailWayInfo = new RailInfo()
+                {
+                    RailWayName = RailwayName,
+                    Instruments = this.Instruments,
+                    SerialNumber = this.SerialNumber,
+                    WorkDate = WorkDate,
+                    WorkSection = this.WorkSection,
+                    WorkLength = this.WorkLength,
+                    SelectedRailType = this.SelectedRailType,
+                    SelectedLineType = this.SelectedLineType,
+                    WorkGroup = this.WorkGroup,
+                    StartMileage = this.startMileage,
+                    EndMileage = this.endMileage,
+                    OperatorName = this.OperatorName,
+                    AnalyzeTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                    ElapsedTimeForScrrnshot = time,
+                    SelectedRouteLine = this.SelectedRouteLine,
+                    SelectedUpOrDown = this.SelectedUpOrDown,
+                    CycleNumber = ParseCycleNumber(SelectedCycleNumber)
+                };
+                //AboutJson.SaveJson(NeedSavedInfo, Path.Combine(Settings.Default.InPath, MainWindow.MainVm.ImgFolderName), "info.json");
+                Application.Current.MainWindow.WindowState = WindowState.Maximized;
+            });
         }
 
         public int ParseCycleNumber(object selectedItem)

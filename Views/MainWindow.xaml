@@ -686,7 +686,7 @@ VerticalAlignment="Center">
                                     hc:IconElement.Geometry="{StaticResource WindowsGeometry}"
                                     Effect="{StaticResource EffectShadow4}"
                                     FontSize="14"
-                                    IsChecked="{Binding IsOpen, ElementName=DrawerLeft}" HorizontalAlignment="Stretch">
+                                    IsChecked="{Binding IsOpen, ElementName=DrawerLeft}" HorizontalAlignment="Stretch" Checked="ToggleButton_Checked_2">
                                     系统设置
                                 </ToggleButton>
                                 <Button

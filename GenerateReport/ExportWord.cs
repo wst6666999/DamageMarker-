@@ -117,7 +117,14 @@ namespace DamageMaker.GenerateReport
         {
             try
             {
-                document = DocX.Load(".\\Resources\\上海报告.docx");
+                // 用程序运行目录拼绝对路径，不依赖当前工作目录。
+                string templatePath = Path.Combine(AppContext.BaseDirectory, "Resources", "上海报告.docx");
+                if (!File.Exists(templatePath))
+                {
+                    throw new FileNotFoundException("找不到报告模板文件：" + templatePath);
+                }
+
+                document = DocX.Load(templatePath);
 
                 var statisticalTable = document.Tables.FirstOrDefault();//获取模版的第一个表格
                 FillInTable(statisticalTable);//填充统计表格
@@ -130,6 +137,7 @@ namespace DamageMaker.GenerateReport
             catch (IOException ex)
             {
                 Console.WriteLine(ex.Message);
+                throw; // 重新抛出，让上层感知失败，弹真实错误
             }
             finally
             {
@@ -220,12 +228,15 @@ namespace DamageMaker.GenerateReport
             var para = document.Paragraphs.FirstOrDefault(p => p.Text.Contains("张三"));
             if (para != null)
             {
-                // 替换“张三”为“合肥平行线机器人”
-                string newOperatorName = NeedSavedInfo?.RailWayInfo.OperatorName ?? "合肥平行线机器人";
-                para.ReplaceText("张三", newOperatorName);
-
-                // 设置段落右对齐
-                para.Alignment = Alignment.right;
+                // 仅当系统里配置了回放人员时才替换模板中的报告人；
+                // 未配置时保留模板原样（张三），避免被无关的默认值覆盖。
+                string newOperatorName = NeedSavedInfo?.RailWayInfo.OperatorName;
+                if (!string.IsNullOrWhiteSpace(newOperatorName))
+                {
+                    para.ReplaceText("张三", newOperatorName);
+                    // 设置段落右对齐
+                    para.Alignment = Alignment.right;
+                }
             }
 
             //替换报告时间

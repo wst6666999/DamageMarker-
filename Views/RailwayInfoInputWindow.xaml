@@ -50,7 +50,7 @@
         <Border
             Grid.Row="0"
             Margin="0,0,0,15"
-            Background=" #5586de "
+            Background="#2D9F4C "
             CornerRadius="4">
             <TextBlock
                 Margin="90,10"
@@ -224,7 +224,7 @@
             <Button
                 Width="102"
                 Height="30"
-                Background=" #5586de "
+                Background="#2D9F4C"
                 Command="{Binding SaveRailWayInfoCommand}"
                 AutomationProperties.AutomationId="btnSave"
                 CommandParameter="{Binding RelativeSource={RelativeSource AncestorType={x:Type hc:Window}}}"

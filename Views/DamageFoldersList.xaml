@@ -39,9 +39,10 @@
             <Setter Property="VerticalContentAlignment" Value="Center" />
             <Setter Property="Padding" Value="10,5" />
             <Setter Property="FontSize" Value="16" />
-            <Setter Property="Background" Value="#326cf3" />
+            <!-- 界面风格统一：表头由蓝色改为绿 #2D9F4C -->
+            <Setter Property="Background" Value="#2D9F4C" />
             <Setter Property="Foreground" Value="White" />
-            <Setter Property="BorderBrush" Value="#FF01579B" />
+            <Setter Property="BorderBrush" Value="#1B5E20" />
             <Setter Property="BorderThickness" Value="0,0,0,1" />
         </Style>
         <!--  单元格内容居中  -->
@@ -56,6 +57,9 @@
             <Setter Property="FontSize" Value="14" />
             <Setter Property="Padding" Value="10,5" />
             <Setter Property="Margin" Value="5" />
+            <!-- 界面风格统一：按钮由主题蓝改为山河绿 #2D9F4C -->
+            <Setter Property="Background" Value="#2D9F4C" />
+            <Setter Property="BorderBrush" Value="#2D9F4C" />
         </Style>
     </Window.Resources>
     <Grid>
@@ -261,7 +265,12 @@
                 Command="{Binding ExportReportCommand}"
                 CommandParameter="{Binding ElementName=folderList, Path=SelectedItem}"
                 Content="导出Word报告" />
-            <Button Command="{Binding ExportExcelCommand}" Content="导出Excel" />
+            <Button
+                Command="{Binding ExportExcelCommand}"
+                Content="导出Excel"
+                Click="Button_Click_1"
+                Background="{DynamicResource PrimaryBrush}"
+                BorderBrush="{DynamicResource PrimaryBrush}" />
             <Button
                 Command="{Binding DeleteFoldersCommand}"
                 CommandParameter="{Binding ElementName=folderList, Path=SelectedItem}"
@@ -273,7 +282,9 @@
             <Button
                 Command="{Binding OpenInFolderCommand}"
                 CommandParameter="Excel文件夹"
-                Content="打开Excel目录" />
+                Content="打开Excel目录"
+                Background="{DynamicResource PrimaryBrush}"
+                BorderBrush="{DynamicResource PrimaryBrush}" />
         </UniformGrid>
     </Grid>
 </Window>

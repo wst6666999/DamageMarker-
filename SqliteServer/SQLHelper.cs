@@ -45,7 +45,7 @@ namespace DamageMaker.SqliteServer
         {
             _mDbConnectionString = "Filename=" + dataSource;
             _connection = new SqliteConnection(_mDbConnectionString);
-
+            EnsureDamageFoldersNewColumns();
         }
 
         /// <summary>
@@ -388,6 +388,57 @@ namespace DamageMaker.SqliteServer
         }
 
 
+
+        /// <summary>
+        /// 确保 DamageFolders 表存在新版本列：StartMileage / EndMileage / SelectedRailType。
+        /// 旧库升级用，幂等，每次构造 SQLHelper 时自动执行。
+        /// </summary>
+        public void EnsureDamageFoldersNewColumns()
+        {
+            try
+            {
+                EnsureConnectionOpen();
+
+                var existingColumns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                using (var columnCommand = new SqliteCommand("PRAGMA table_info(DamageFolders);", _connection))
+                using (var reader = columnCommand.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        string columnName = reader.IsDBNull(1) ? string.Empty : reader.GetString(1);
+                        if (!string.IsNullOrEmpty(columnName))
+                        {
+                            existingColumns.Add(columnName);
+                        }
+                    }
+                }
+
+                string[] newColumns =
+                {
+                    "StartMileage TEXT",
+                    "EndMileage TEXT",
+                    "SelectedRailType TEXT"
+                };
+
+                foreach (string columnDef in newColumns)
+                {
+                    string columnName = columnDef.Split(' ')[0];
+                    if (!existingColumns.Contains(columnName))
+                    {
+                        using var alterCommand = new SqliteCommand(
+                            $"ALTER TABLE DamageFolders ADD COLUMN {columnDef};",
+                            _connection);
+                        alterCommand.ExecuteNonQuery();
+                        Console.WriteLine($"[数据库迁移] DamageFolders 表已增加字段 {columnName}");
+                    }
+                }
+            }
+            catch (SqliteException ex)
+            {
+                // 数据库不存在或表不存在时不阻断程序启动，相关操作后续会自行报错。
+                Console.WriteLine($"[数据库迁移] 检查 DamageFolders 新字段失败: {ex.Message}");
+            }
+        }
 
         /// <summary>
         /// 确保 Images 表存在 LineType 字段。

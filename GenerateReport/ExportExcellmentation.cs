@@ -43,9 +43,8 @@ namespace DamageMaker.GenerateReport
 
         public ExportExcellmentation()
         {
-            // 新 Excel 模板路径。
-            // 如果你实际仍然把新模板命名为“上海表格.xlsx”，只需要改这一行。
-            ExcelTemplatePath = @".\Resources\上海表格.xlsx";
+            // 上海版 Excel 模板。
+            ExcelTemplatePath = Path.Combine(AppContext.BaseDirectory, "Resources", "上海表格.xlsx");
         }
 
         /// <summary>
@@ -217,6 +216,13 @@ namespace DamageMaker.GenerateReport
             string folderPath = ResolveFolderPath(inputPath);
             int folderId = FindFolderId(sqlHelper, folderPath);
 
+            // 库中没有该文件夹记录时，尝试从该文件夹的 info.json 补录一条，再重新查询。
+            // 这样从其他机器拷入、未在本系统智能回放过的手动文件夹也能正常导出。
+            if (folderId < 0)
+            {
+                folderId = TryInsertFolderFromInfoJson(sqlHelper, folderPath);
+            }
+
             if (folderId < 0)
             {
                 throw new InvalidOperationException(
@@ -231,6 +237,43 @@ namespace DamageMaker.GenerateReport
                 DamageInfo = LoadDamageInfo(sqlHelper, folderId),
                 ImageCount = LoadImageCount(sqlHelper, folderId)
             };
+        }
+
+        /// <summary>
+        /// 尝试读取文件夹的 info.json 并补插到 DamageFolders 表。
+        /// 成功返回 FolderId，失败返回 -1。
+        /// </summary>
+        private static int TryInsertFolderFromInfoJson(SQLHelper sqlHelper, string folderPath)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(folderPath) || !Directory.Exists(folderPath))
+                {
+                    return -1;
+                }
+
+                string infoPath = Path.Combine(folderPath, "info.json");
+                if (!File.Exists(infoPath))
+                {
+                    Console.WriteLine($"[ExportExcel] 缺少 info.json，无法补录: {folderPath}");
+                    return -1;
+                }
+
+                ScreenshotInfo? info = AboutJson.DeserializeJson<ScreenshotInfo>(infoPath);
+                if (info?.RailWayInfo == null)
+                {
+                    Console.WriteLine($"[ExportExcel] info.json 内容不完整，无法补录: {folderPath}");
+                    return -1;
+                }
+
+                Console.WriteLine($"[ExportExcel] 数据库无记录，从 info.json 补录: {folderPath}");
+                return DataAccess.InsertFolderInfo(sqlHelper, folderPath, info);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ExportExcel] 补录文件夹信息失败: {ex.Message}");
+                return -1;
+            }
         }
 
         private static int FindFolderId(SQLHelper sqlHelper, string folderPath)

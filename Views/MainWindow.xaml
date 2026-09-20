@@ -645,7 +645,7 @@ VerticalAlignment="Center">
                                         <MenuItem.ItemTemplate>
                                             <DataTemplate>
                                                 <MenuItem
-                                                    Background="{StaticResource PrimaryBrush}"
+                                                    Background="{StaticResource ShanHePurpleBrush}"
                                                     Command="{Binding Command}"
                                                     CommandParameter="{Binding CommandParameter}"
                                                     FontSize="16"

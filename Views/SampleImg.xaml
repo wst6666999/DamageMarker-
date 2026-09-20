@@ -96,7 +96,9 @@
 
     <Window.Resources>
         <ImageBrush x:Key="ImageBackground" ImageSource="{Binding ImgSource}"/>
-        <Style BasedOn="{StaticResource TextBlockDefaultPrimary}" TargetType="TextBlock" />
+        <Style BasedOn="{StaticResource TextBlockDefaultPrimary}" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#2D9F4C" />
+        </Style>
     </Window.Resources>
     <StackPanel Background="{StaticResource SecondaryRegionBrush}">
         <TextBlock

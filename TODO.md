@@ -156,6 +156,16 @@
 - **前置条件**：`Resources\上海表格.xlsx` 文件本身（用户已放入，内容来自 excel模板SH.xlsx 复制）。
 - **验证**：编译后 `bin\Debug\net8.0-windows10.0.26100.0\Resources\上海表格.xlsx` 已生成；编译时 exe 被运行中的程序锁定（MSB3027）与本次改动无关，关掉程序重新编译即可。
 
+### 16. 删除演示用「切换主题」功能
+
+- **需求**：删除主界面标题栏右侧演示用的「切换主题」下拉按钮（默认/黑色/紫色主题）。
+- **改动文件**：
+  - `Views/NonClient.xaml` —— 删掉整个 `<hc:SplitButton>「切换主题」</hc:SplitButton>` 块，并清理设计时 DataContext 与 viewmodels 命名空间引用。
+  - `Views/NonClient.xaml.cs` —— 删掉 `DataContext = new NonClientViewModel();` 及对应 using。
+  - `ViewModels/NonClientViewModel.cs` —— 整个文件删除（含 `ToggleTheme` 命令及 HandyControl SkinType 切换逻辑）。
+- **保留**：`NonClient` 控件本身（`Views/NonClient.xaml(.cs)`）继续承载 HandyControl 窗口的标题栏区域（`MainWindow.xaml.cs:43` 的 `NonClientAreaContent = new NonClient()` 不动），只是内部不再有主题切换按钮。
+- **验证**：Visual Studio2022 编译 0 错误；全项目无 `NonClientViewModel` / `ToggleTheme` 残留引用。
+
 ## 待办 / 备注
 
 - `dotnet build` / `dotnet` CLI 无法编译此项目（依赖 COM 引用，需 .NET Framework 版 MSBuild），专门情况下需用 VS 的 MSBuild.exe。

@@ -480,28 +480,7 @@ VerticalAlignment="Center">
                         <TranslateTransform Y="2"/>
                     </TransformGroup>
                 </TextBlock.RenderTransform>
-                <TextBlock.Triggers>
-                    <EventTrigger RoutedEvent="MouseEnter">
-                        <BeginStoryboard>
-                            <Storyboard>
-                                <ColorAnimation 
-                        Storyboard.TargetProperty="Foreground.Color"
-                        To="#FF7043"  
-                                    Duration="0:0:0.3"/>
-                            </Storyboard>
-                        </BeginStoryboard>
-                    </EventTrigger>
-                    <EventTrigger RoutedEvent="MouseLeave">
-                        <BeginStoryboard>
-                            <Storyboard>
-                                <ColorAnimation 
-                                    Storyboard.TargetProperty="Foreground.Color"
-                                    To="#4A6BFF"  
-                                    Duration="0:0:0.3"/>
-                            </Storyboard>
-                        </BeginStoryboard>
-                    </EventTrigger>
-                </TextBlock.Triggers>
+              
             </TextBlock>
             <StackPanel
                 Grid.Column="0" 

@@ -1,5 +1,4 @@
-﻿using DamageMaker.ViewModels;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -24,7 +23,6 @@ namespace DamageMaker.Views
         public NonClient()
         {
             InitializeComponent();
-            DataContext = new NonClientViewModel();
         }
     }
 }

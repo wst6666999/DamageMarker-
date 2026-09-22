@@ -147,16 +147,7 @@
   - 用 python 对 `DB/Dm.db` 模拟迁移成功（三列加入，原列保留）；
   - 实测 `bin/Release/.../ImgFile/in/1+1+2026年8月6日/info.json` 含全部插入字段；Release 库运行新版程序后会自动加列，无需手工改库。
 
-### 15. 修复：另一版本（shanghai-26.8.24-w）导出Excel模板缺失
-
-- **现象**：`D:\shanghai-26.8.24-w\project\ShangHai-DamagerMarker` 版本导出 Excel 报 `FileNotFoundException`（找不到 `bin\Debug\...\Resources\上海表格.xlsx`）。
-- **根因**：该版本 `ExportExcellmentation.cs:38` 模板路径指向 `.\Resources\上海表格.xlsx`，但工程 `Resources` 目录原本没有该文件，csproj 也没有对应复制规则 → 编译产物里缺模板 → 运行时找不到。
-- **改动文件**：`D:\shanghai-26.8.24-w\project\ShangHai-DamagerMarker\DamageMarker.csproj`（仅此一个文件，未动代码）
-- **改动内容**：在 `Resources\上海报告.docx` 条目后新增 `<None Update="Resources\上海表格.xlsx"><CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory></None>`。
-- **前置条件**：`Resources\上海表格.xlsx` 文件本身（用户已放入，内容来自 excel模板SH.xlsx 复制）。
-- **验证**：编译后 `bin\Debug\net8.0-windows10.0.26100.0\Resources\上海表格.xlsx` 已生成；编译时 exe 被运行中的程序锁定（MSB3027）与本次改动无关，关掉程序重新编译即可。
-
-### 16. 删除演示用「切换主题」功能
+### 15. 删除演示用「切换主题」功能
 
 - **需求**：删除主界面标题栏右侧演示用的「切换主题」下拉按钮（默认/黑色/紫色主题）。
 - **改动文件**：
